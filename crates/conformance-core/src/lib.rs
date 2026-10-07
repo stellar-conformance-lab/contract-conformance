@@ -43,18 +43,30 @@ pub mod engine {
     use crate::scenario::Scenario;
     use crate::result::{TestResult, Status};
 
-    pub struct ConformanceEngine<'a, F> {
-        env: &'a Env,
-        fixture: F,
-    }
+    pub struct ConformanceEngine;
 
-    impl<'a, F: Fixture> ConformanceEngine<'a, F> {
-        pub fn new(env: &'a Env, fixture: F) -> Self {
-            Self { env, fixture }
-        }
+    impl ConformanceEngine {
+        /// Executes a scenario in a completely isolated, fresh environment.
+        /// The caller provides a factory to generate a fresh fixture for the new environment,
+        /// ensuring no state leaks between scenarios.
+        pub fn run_isolated_scenario<F, S, Factory>(
+            scenario: &S,
+            fixture_factory: Factory,
+        ) -> TestResult
+        where
+            F: Fixture,
+            S: Scenario<F>,
+            Factory: FnOnce(&Env) -> F,
+        {
+            // Enforce isolation by creating a fresh Env for this scenario run.
+            // Requires the `testutils` feature in soroban-sdk.
+            let env = Env::default();
+            
+            // The environment is prepared, so we can now construct the fixture which
+            // likely depends on this specific Env instance (e.g., for Address types).
+            let fixture = fixture_factory(&env);
 
-        pub fn run_scenario<S: Scenario<F>>(&self, scenario: &S) -> TestResult {
-            if let Err(_e) = self.fixture.setup(self.env) {
+            if let Err(_e) = fixture.setup(&env) {
                 return TestResult {
                     test_id: scenario.id(),
                     description: scenario.description(),
@@ -63,7 +75,7 @@ pub mod engine {
                     observed_behavior: "Setup failed",
                 };
             }
-            scenario.run(self.env, &self.fixture)
+            scenario.run(&env, &fixture)
         }
     }
 }
