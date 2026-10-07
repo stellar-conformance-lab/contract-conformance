@@ -13,6 +13,7 @@ pub enum ValidFixtureError {
 pub struct ValidSep41Fixture {
     pub admin: Address,
     pub alice: Address,
+    pub bob: Address,
     pub token_id: Address,
 }
 
@@ -20,6 +21,7 @@ impl ValidSep41Fixture {
     pub fn new(env: &Env) -> Self {
         let admin = Address::generate(env);
         let alice = Address::generate(env);
+        let bob = Address::generate(env);
         
         // Use the official Stellar Asset Contract as the deterministic reference implementation under test.
         let token_id = env.register_stellar_asset_contract(admin.clone());
@@ -27,6 +29,7 @@ impl ValidSep41Fixture {
         Self {
             admin,
             alice,
+            bob,
             token_id,
         }
     }
@@ -41,7 +44,7 @@ impl Fixture for ValidSep41Fixture {
         // Establish a deterministic initial balance for the test account.
         // This simulates whatever internal mechanism a token uses to distribute balances.
         // The conformance engine remains entirely unaware of this internal mint operation.
-        sac_client.mint(&self.alice, &1000);
+        sac_client.mint(&self.alice, &self.expected_initial_balance());
         
         Ok(())
     }
@@ -55,29 +58,39 @@ impl Sep41Fixture for ValidSep41Fixture {
     fn test_account_1(&self) -> &Address {
         &self.alice
     }
+
+    fn test_account_2(&self) -> &Address {
+        &self.bob
+    }
+
+    fn expected_initial_balance(&self) -> i128 {
+        1000
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use conformance_core::engine::ConformanceEngine;
-    use conformance_sep41::{MetadataScenario, InitialBalanceScenario};
     use conformance_core::result::Status;
+    use conformance_sep41::{
+        MetaNameScenario, MetaSymbolScenario, MetaDecimalsScenario,
+        BalInitialScenario, BalZeroScenario, BalIsolationScenario
+    };
 
     #[test]
     fn demonstrate_valid_fixture() {
-        // Run Metadata scenario in isolation
-        let meta_result = ConformanceEngine::run_isolated_scenario(
-            &MetadataScenario,
-            |env| ValidSep41Fixture::new(env)
-        );
-        assert_eq!(meta_result.status, Status::Pass);
+        let results = [
+            ConformanceEngine::run_isolated_scenario(&MetaNameScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&MetaSymbolScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&MetaDecimalsScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BalInitialScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BalZeroScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BalIsolationScenario, |env| ValidSep41Fixture::new(env)),
+        ];
 
-        // Run Balance scenario in isolation
-        let bal_result = ConformanceEngine::run_isolated_scenario(
-            &InitialBalanceScenario,
-            |env| ValidSep41Fixture::new(env)
-        );
-        assert_eq!(bal_result.status, Status::Pass);
+        for result in results {
+            assert_eq!(result.status, Status::Pass);
+        }
     }
 }
