@@ -23,25 +23,17 @@ impl<F: Sep41Fixture> Scenario<F> for MetadataScenario {
     fn run(&self, env: &Env, fixture: &F) -> TestResult {
         let client = TokenClient::new(env, fixture.token_contract_id());
         
+        // SEP-41 requires these functions to exist and return specific types.
+        // It does NOT require decimals to be 7. We simply verify the functions are callable.
         let _name = client.name();
         let _symbol = client.symbol();
-        let decimals = client.decimals();
-        
-        if decimals != 7 {
-            return TestResult {
-                test_id: self.id(),
-                description: self.description(),
-                status: Status::Fail,
-                expected_behavior: "Metadata successfully retrieved and decimals = 7",
-                observed_behavior: "Decimals mismatch",
-            };
-        }
+        let _decimals = client.decimals();
 
         TestResult {
             test_id: self.id(),
             description: self.description(),
             status: Status::Pass,
-            expected_behavior: "Metadata successfully retrieved",
+            expected_behavior: "Metadata functions are callable",
             observed_behavior: "Token exposed name, symbol, decimals",
         }
     }

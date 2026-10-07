@@ -21,8 +21,7 @@ impl ValidSep41Fixture {
         let admin = Address::generate(env);
         let alice = Address::generate(env);
         
-        // Use the official built-in Stellar Asset Contract as our reference SEP-41 implementation.
-        // This is a known-good, deterministic implementation running locally.
+        // Use the official Stellar Asset Contract as the deterministic reference implementation under test.
         let token_id = env.register_stellar_asset_contract(admin.clone());
         
         Self {
