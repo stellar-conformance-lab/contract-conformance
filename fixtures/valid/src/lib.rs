@@ -25,6 +25,7 @@ impl ValidSep41Fixture {
         let bob = Address::generate(env);
         let carol = Address::generate(env);
         
+        // Use the official Stellar Asset Contract as the deterministic reference implementation under test.
         let token_id = env.register_stellar_asset_contract(admin.clone());
         
         Self {
@@ -42,7 +43,12 @@ impl Fixture for ValidSep41Fixture {
 
     fn setup(&self, env: &Env) -> Result<(), Self::Error> {
         let sac_client = StellarAssetClient::new(env, &self.token_id);
+        
+        // Establish a deterministic initial balance for the test account.
+        // This simulates whatever internal mechanism a token uses to distribute balances.
+        // The conformance engine remains entirely unaware of this internal mint operation.
         sac_client.mint(&self.alice, &self.expected_initial_balance());
+        
         Ok(())
     }
 }
@@ -81,9 +87,10 @@ mod test {
         TransferInsufficientBalanceScenario, TransferAuthorizationScenario,
         TransferNegativeAmountScenario,
         AllowanceQueryScenario, AllowanceApproveScenario,
-        AllowanceTransferFromScenario, AllowanceReductionScenario,
+        AllowanceTransferFromScenario, AllowanceExpirationScenario,
         AllowanceInsufficientScenario, AllowanceUnauthorizedApproveScenario,
-        AllowanceUnauthorizedTransferFromScenario, AllowanceEventScenario
+        AllowanceUnauthorizedTransferFromScenario, AllowanceEventScenario,
+        AllowanceZeroRevocationScenario, AllowanceOverwriteScenario
     };
 
     #[test]
@@ -102,11 +109,13 @@ mod test {
             ConformanceEngine::run_isolated_scenario(&AllowanceQueryScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&AllowanceApproveScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&AllowanceTransferFromScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceReductionScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&AllowanceExpirationScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&AllowanceInsufficientScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&AllowanceUnauthorizedApproveScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&AllowanceUnauthorizedTransferFromScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&AllowanceEventScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&AllowanceZeroRevocationScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&AllowanceOverwriteScenario, |env| ValidSep41Fixture::new(env)),
         ];
 
         for result in results {

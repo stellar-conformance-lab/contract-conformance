@@ -3,6 +3,7 @@
 use conformance_core::scenario::Scenario;
 use conformance_core::result::{TestResult, Status};
 use soroban_sdk::{token::Client as TokenClient, Address, Env};
+use soroban_sdk::testutils::Ledger;
 
 pub trait Sep41Fixture: conformance_core::fixture::Fixture {
     fn token_contract_id(&self) -> &Address;
@@ -287,18 +288,23 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceApproveScenario {
         env.mock_all_auths();
         let result = client.try_approve(alice, carol, &amount, &expiration);
 
-        if result.is_ok() {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Approve executes successfully", observed_behavior: "Approve succeeded" }
-        } else {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Approve executes successfully", observed_behavior: "Approve failed unexpectedly" }
+        if result.is_err() {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Approve executes successfully", observed_behavior: "Approve failed unexpectedly" };
         }
+
+        let allowance = client.allowance(alice, carol);
+        if allowance != amount {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "allowance(owner, spender) equals approved amount", observed_behavior: "Allowance did not accurately match approval" };
+        }
+
+        TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Approve successfully commits exact allowance to state", observed_behavior: "Approve verified successfully" }
     }
 }
 
 pub struct AllowanceTransferFromScenario;
 impl<F: Sep41Fixture> Scenario<F> for AllowanceTransferFromScenario {
     fn id(&self) -> &'static str { "SEP41-ALLOWANCE-003" }
-    fn description(&self) -> &'static str { "Successful transfer_from" }
+    fn description(&self) -> &'static str { "transfer_from behavior and reduction" }
     fn run(&self, env: &Env, fixture: &F) -> TestResult {
         let client = TokenClient::new(env, fixture.token_contract_id());
         let alice = fixture.test_account_1();
@@ -307,48 +313,62 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceTransferFromScenario {
         
         let initial_alice = client.balance(alice);
         let initial_bob = client.balance(bob);
-        let amount = 50_i128;
-        let expiration = env.ledger().sequence() + 100;
-
-        env.mock_all_auths();
-        client.approve(alice, carol, &amount, &expiration);
-        client.transfer_from(carol, alice, bob, &amount);
-
-        let final_alice = client.balance(alice);
-        let final_bob = client.balance(bob);
-
-        if final_alice == initial_alice - amount && final_bob == initial_bob + amount {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "transfer_from moves tokens exactly", observed_behavior: "Balances updated correctly via delegated transfer" }
-        } else {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "transfer_from moves tokens exactly", observed_behavior: "Balances were mathematically incorrect" }
-        }
-    }
-}
-
-pub struct AllowanceReductionScenario;
-impl<F: Sep41Fixture> Scenario<F> for AllowanceReductionScenario {
-    fn id(&self) -> &'static str { "SEP41-ALLOWANCE-004" }
-    fn description(&self) -> &'static str { "Allowance reduction" }
-    fn run(&self, env: &Env, fixture: &F) -> TestResult {
-        let client = TokenClient::new(env, fixture.token_contract_id());
-        let alice = fixture.test_account_1();
-        let bob = fixture.test_account_2();
-        let carol = fixture.test_account_3();
-        
-        let initial_allowance = 100_i128;
+        let amount = 100_i128;
         let transfer_amount = 30_i128;
         let expiration = env.ledger().sequence() + 100;
 
         env.mock_all_auths();
-        client.approve(alice, carol, &initial_allowance, &expiration);
+        client.approve(alice, carol, &amount, &expiration);
         client.transfer_from(carol, alice, bob, &transfer_amount);
 
+        let final_alice = client.balance(alice);
+        let final_bob = client.balance(bob);
         let final_allowance = client.allowance(alice, carol);
 
-        if final_allowance == initial_allowance - transfer_amount {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "transfer_from linearly reduces allowance", observed_behavior: "Allowance correctly reduced" }
+        // Verify expiration preservation: still valid at exactly 'expiration'
+        env.ledger().with_mut(|li| li.sequence_number = expiration);
+        let at_exp_allowance = client.allowance(alice, carol);
+
+        // Verify it expires properly past 'expiration'
+        env.ledger().with_mut(|li| li.sequence_number = expiration + 1);
+        let expired_allowance = client.allowance(alice, carol);
+
+        if final_alice == initial_alice - transfer_amount && 
+           final_bob == initial_bob + transfer_amount &&
+           final_allowance == amount - transfer_amount &&
+           at_exp_allowance == amount - transfer_amount &&
+           expired_allowance == 0 {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "transfer_from moves tokens exactly, reduces allowance, and preserves expiration", observed_behavior: "State transitions correctly processed" }
         } else {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "transfer_from linearly reduces allowance", observed_behavior: "Allowance reduction was incorrect" }
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "transfer_from moves tokens exactly, reduces allowance, and preserves expiration", observed_behavior: "State mutations failed to match specification requirements" }
+        }
+    }
+}
+
+pub struct AllowanceExpirationScenario;
+impl<F: Sep41Fixture> Scenario<F> for AllowanceExpirationScenario {
+    fn id(&self) -> &'static str { "SEP41-ALLOWANCE-004" }
+    fn description(&self) -> &'static str { "Expiration bounds" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let carol = fixture.test_account_3();
+        let amount = 100_i128;
+        let expiration = env.ledger().sequence() + 10;
+
+        env.mock_all_auths();
+        client.approve(alice, carol, &amount, &expiration);
+
+        env.ledger().with_mut(|li| li.sequence_number = expiration);
+        let exact_allowance = client.allowance(alice, carol);
+
+        env.ledger().with_mut(|li| li.sequence_number = expiration + 1);
+        let expired_allowance = client.allowance(alice, carol);
+
+        if exact_allowance == amount && expired_allowance == 0 {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Allowance is zero when current > live_until_ledger", observed_behavior: "Expiration semantics correctly adhered to" }
+        } else {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Allowance is zero when current > live_until_ledger", observed_behavior: "Expiration semantics violated" }
         }
     }
 }
@@ -452,33 +472,90 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceEventScenario {
         client.approve(alice, carol, &amount, &expiration);
 
         let events = env.events().all();
-        let mut found = false;
+        let mut found_topic = false;
         let approve_symbol = soroban_sdk::Symbol::new(env, "approve");
 
         for (contract_id, topics, _data) in events.into_iter() {
             if contract_id == *fixture.token_contract_id() {
+                let mut has_symbol = false;
+                let mut has_owner = false;
+                let mut has_spender = false;
+                
                 for topic in topics.into_iter() {
-                    if topic.to_val() == approve_symbol.to_val() {
-                        found = true;
-                        break;
-                    }
+                    let val = topic.to_val();
+                    if val == approve_symbol.to_val() { has_symbol = true; }
+                    if val == alice.to_val() { has_owner = true; }
+                    if val == carol.to_val() { has_spender = true; }
+                }
+
+                if has_symbol && has_owner && has_spender {
+                    found_topic = true;
+                    break;
                 }
             }
         }
 
-        if found {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Emits approve event", observed_behavior: "Approve event found" }
+        if found_topic {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Emits approve event with required topics", observed_behavior: "Approve event found with required semantic topics" }
         } else {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Emits approve event", observed_behavior: "Approve event missing" }
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Emits approve event with required topics", observed_behavior: "Approve event missing required semantic topics" }
         }
     }
 }
 
-// Expiration boundary testing is intentionally omitted.
-// The SEP-41 standard specifies that live_until_ledger < current_ledger causes allowance to be treated as zero.
-// However, asserting this accurately requires advancing the environment ledger across boundary states 
-// mid-test, which implies mutating LedgerInfo dependencies that cannot be guaranteed strictly without
-// fixture-level environmental assumptions breaking pure token isolation.
+pub struct AllowanceZeroRevocationScenario;
+impl<F: Sep41Fixture> Scenario<F> for AllowanceZeroRevocationScenario {
+    fn id(&self) -> &'static str { "SEP41-ALLOWANCE-009" }
+    fn description(&self) -> &'static str { "Zero-amount revocation" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let carol = fixture.test_account_3();
+        let amount = 100_i128;
+        let expiration = env.ledger().sequence() + 100;
 
-// Zero-value allowance actions (e.g. approving 0) are also intentionally omitted as SEP-41 
-// relies entirely on native integer resolution for these outcomes without requiring discrete edge-case behaviors.
+        env.mock_all_auths();
+        client.approve(alice, carol, &amount, &expiration);
+        let initial_allowance = client.allowance(alice, carol);
+        
+        let zero_amount = 0_i128;
+        client.approve(alice, carol, &zero_amount, &expiration);
+        let revoked_allowance = client.allowance(alice, carol);
+
+        if initial_allowance == amount && revoked_allowance == 0 {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "approve with amount=0 revokes allowance completely", observed_behavior: "Allowance successfully revoked to 0" }
+        } else {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "approve with amount=0 revokes allowance completely", observed_behavior: "Allowance was not revoked accurately" }
+        }
+    }
+}
+
+pub struct AllowanceOverwriteScenario;
+impl<F: Sep41Fixture> Scenario<F> for AllowanceOverwriteScenario {
+    fn id(&self) -> &'static str { "SEP41-ALLOWANCE-010" }
+    fn description(&self) -> &'static str { "Approve overwrite behavior" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let carol = fixture.test_account_3();
+        let amount1 = 100_i128;
+        let exp1 = env.ledger().sequence() + 50;
+        let amount2 = 40_i128;
+        let exp2 = env.ledger().sequence() + 100;
+
+        env.mock_all_auths();
+        client.approve(alice, carol, &amount1, &exp1);
+        client.approve(alice, carol, &amount2, &exp2);
+        
+        let final_allowance = client.allowance(alice, carol);
+        
+        env.ledger().with_mut(|li| li.sequence_number = exp2);
+        let at_exp2_allowance = client.allowance(alice, carol);
+
+        if final_allowance == amount2 && at_exp2_allowance == amount2 {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Subsequent approve fully overwrites amount and expiration", observed_behavior: "Allowance successfully overwritten" }
+        } else {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Subsequent approve fully overwrites amount and expiration", observed_behavior: "Allowance overwrite failed" }
+        }
+    }
+}
