@@ -75,7 +75,10 @@ mod test {
     use conformance_core::result::Status;
     use conformance_sep41::{
         MetaNameScenario, MetaSymbolScenario, MetaDecimalsScenario,
-        BalInitialScenario, BalZeroScenario
+        BalInitialScenario, BalZeroScenario,
+        TransferSuccessScenario, TransferEventScenario, 
+        TransferInsufficientBalanceScenario, TransferAuthorizationScenario,
+        TransferNegativeAmountScenario
     };
 
     #[test]
@@ -86,6 +89,11 @@ mod test {
             ConformanceEngine::run_isolated_scenario(&MetaDecimalsScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&BalInitialScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&BalZeroScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&TransferSuccessScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&TransferEventScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&TransferInsufficientBalanceScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&TransferAuthorizationScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&TransferNegativeAmountScenario, |env| ValidSep41Fixture::new(env)),
         ];
 
         for result in results {
