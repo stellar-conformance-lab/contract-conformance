@@ -4,4 +4,5 @@ members = [
     "crates/conformance-core",
     "crates/conformance-sep41",
     "crates/conformance-report",
+    "fixtures/valid",
 ]
