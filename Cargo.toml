@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/conformance-core",
+    "crates/conformance-sep41",
+    "crates/conformance-report",
+]

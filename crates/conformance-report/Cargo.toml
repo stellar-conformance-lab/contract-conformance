@@ -1,0 +1,7 @@
+[package]
+name = "conformance-report"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+conformance-core = { path = "../conformance-core" }
