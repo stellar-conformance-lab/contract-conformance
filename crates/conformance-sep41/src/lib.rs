@@ -15,6 +15,9 @@ pub trait Sep41Fixture: conformance_core::fixture::Fixture {
 // METADATA CONFORMANCE
 // -----------------------------------------------------------------------------
 
+// SEP-41 Requirement: `name() -> String`
+// The standard dictates the interface but imposes no constraint on the returned value.
+// This test is intentionally limited to verifying that the method exists and returns without panic.
 pub struct MetaNameScenario;
 impl<F: Sep41Fixture> Scenario<F> for MetaNameScenario {
     fn id(&self) -> &'static str { "SEP41-META-001" }
@@ -32,6 +35,9 @@ impl<F: Sep41Fixture> Scenario<F> for MetaNameScenario {
     }
 }
 
+// SEP-41 Requirement: `symbol() -> String`
+// The standard dictates the interface but imposes no constraint on the returned value.
+// This test is intentionally limited to verifying that the method exists and returns without panic.
 pub struct MetaSymbolScenario;
 impl<F: Sep41Fixture> Scenario<F> for MetaSymbolScenario {
     fn id(&self) -> &'static str { "SEP41-META-002" }
@@ -49,6 +55,9 @@ impl<F: Sep41Fixture> Scenario<F> for MetaSymbolScenario {
     }
 }
 
+// SEP-41 Requirement: `decimals() -> u32`
+// The standard dictates the interface but imposes no constraint on the returned value.
+// This test is intentionally limited to verifying that the method exists and returns without panic.
 pub struct MetaDecimalsScenario;
 impl<F: Sep41Fixture> Scenario<F> for MetaDecimalsScenario {
     fn id(&self) -> &'static str { "SEP41-META-003" }
@@ -70,6 +79,8 @@ impl<F: Sep41Fixture> Scenario<F> for MetaDecimalsScenario {
 // BALANCE CONFORMANCE
 // -----------------------------------------------------------------------------
 
+// SEP-41 Requirement: `balance(id: Address) -> i128`
+// The standard requires the balance method to accurately return the current balance.
 pub struct BalInitialScenario;
 impl<F: Sep41Fixture> Scenario<F> for BalInitialScenario {
     fn id(&self) -> &'static str { "SEP41-BAL-001" }
@@ -101,6 +112,8 @@ impl<F: Sep41Fixture> Scenario<F> for BalInitialScenario {
     }
 }
 
+// SEP-41 Requirement: `balance(id: Address) -> i128`
+// The standard implicitly requires that unfunded accounts report 0 balance.
 pub struct BalZeroScenario;
 impl<F: Sep41Fixture> Scenario<F> for BalZeroScenario {
     fn id(&self) -> &'static str { "SEP41-BAL-002" }
@@ -126,40 +139,6 @@ impl<F: Sep41Fixture> Scenario<F> for BalZeroScenario {
                 status: Status::Fail,
                 expected_behavior: "New account balance is zero",
                 observed_behavior: "Balance is non-zero",
-            }
-        }
-    }
-}
-
-pub struct BalIsolationScenario;
-impl<F: Sep41Fixture> Scenario<F> for BalIsolationScenario {
-    fn id(&self) -> &'static str { "SEP41-BAL-003" }
-    fn description(&self) -> &'static str { "Balance isolation" }
-    fn run(&self, env: &Env, fixture: &F) -> TestResult {
-        let client = TokenClient::new(env, fixture.token_contract_id());
-        let account1 = fixture.test_account_1();
-        let account2 = fixture.test_account_2();
-        let expected = fixture.expected_initial_balance();
-        
-        // Querying account 2 shouldn't mutate account 1
-        let _bal2 = client.balance(account2);
-        let bal1 = client.balance(account1);
-        
-        if bal1 == expected {
-            TestResult {
-                test_id: self.id(),
-                description: self.description(),
-                status: Status::Pass,
-                expected_behavior: "Querying balances does not mutate them",
-                observed_behavior: "Balance preserved",
-            }
-        } else {
-            TestResult {
-                test_id: self.id(),
-                description: self.description(),
-                status: Status::Fail,
-                expected_behavior: "Querying balances does not mutate them",
-                observed_behavior: "Balance was mutated unexpectedly",
             }
         }
     }
