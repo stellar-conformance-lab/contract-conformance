@@ -26,7 +26,7 @@ impl ValidSep41Fixture {
         let carol = Address::generate(env);
 
         // Use the official Stellar Asset Contract as the deterministic reference implementation under test.
-        let token_id = env.register_stellar_asset_contract(admin.clone());
+        let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
 
         Self {
             admin,
@@ -143,11 +143,11 @@ mod test {
             }),
             ConformanceEngine::run_isolated_scenario(
                 &AllowanceUnauthorizedApproveScenario,
-                |env| ValidSep41Fixture::new(env),
+                ValidSep41Fixture::new,
             ),
             ConformanceEngine::run_isolated_scenario(
                 &AllowanceUnauthorizedTransferFromScenario,
-                |env| ValidSep41Fixture::new(env),
+                ValidSep41Fixture::new,
             ),
             ConformanceEngine::run_isolated_scenario(&AllowanceEventScenario, |env| {
                 ValidSep41Fixture::new(env)
@@ -175,7 +175,7 @@ mod test {
             }),
             ConformanceEngine::run_isolated_scenario(
                 &BurnFromInsufficientAllowanceScenario,
-                |env| ValidSep41Fixture::new(env),
+                ValidSep41Fixture::new,
             ),
             ConformanceEngine::run_isolated_scenario(&BurnEventScenario, |env| {
                 ValidSep41Fixture::new(env)

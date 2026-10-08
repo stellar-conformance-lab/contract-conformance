@@ -1,11 +1,10 @@
 #![no_std]
 
-use conformance_core::engine::ConformanceEngine;
 use conformance_core::fixture::Fixture;
-use conformance_core::result::Status;
 use conformance_sep41::Sep41Fixture;
+use soroban_sdk::contractevent;
 use soroban_sdk::testutils::Address as _;
-use soroban_sdk::{contract, contractimpl, symbol_short, vec, Address, Env, IntoVal, Symbol};
+use soroban_sdk::{contract, contractimpl, vec, Address, Env, IntoVal, Symbol};
 
 // -----------------------------------------------------------------------------
 // MACRO FOR FIXTURE BOILERPLATE
@@ -24,7 +23,7 @@ macro_rules! impl_fixture {
                 let alice = Address::generate(env);
                 let bob = Address::generate(env);
                 let carol = Address::generate(env);
-                let token_id = env.register_contract(None, $contract);
+                let token_id = env.register($contract, ());
                 Self {
                     alice,
                     bob,
@@ -145,7 +144,7 @@ impl BrokenBurnContract {
     pub fn balance(env: Env, id: Address) -> i128 {
         env.storage().instance().get(&id).unwrap_or(0)
     }
-    pub fn burn(env: Env, from: Address, _amount: i128) {
+    pub fn burn(_env: Env, from: Address, _amount: i128) {
         from.require_auth();
         // INTENTIONAL VIOLATION: balance is not reduced!
     }
@@ -202,6 +201,16 @@ impl_fixture!(
 #[contract]
 pub struct BrokenEventDataContract;
 
+#[contractevent(data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Transfer {
+    #[topic]
+    pub from: Address,
+    #[topic]
+    pub to: Address,
+    pub amount: i128,
+}
+
 #[contractimpl]
 impl BrokenEventDataContract {
     pub fn balance(env: Env, id: Address) -> i128 {
@@ -216,8 +225,12 @@ impl BrokenEventDataContract {
 
         // INTENTIONAL VIOLATION: emits wrong amount!
         let wrong_amount = amount + 1;
-        env.events()
-            .publish((Symbol::new(&env, "transfer"), from, to), wrong_amount);
+        Transfer {
+            from,
+            to,
+            amount: wrong_amount,
+        }
+        .publish(&env);
     }
     pub fn mint(env: Env, to: Address, amount: i128) {
         env.storage().instance().set(&to, &amount);
@@ -255,6 +268,8 @@ impl_fixture!(BrokenAuthorizationFixture, BrokenAuthorizationContract);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use conformance_core::engine::ConformanceEngine;
+    use conformance_core::result::Status;
     use conformance_sep41::{
         AllowanceOverwriteScenario, AllowanceTransferFromScenario, BurnSuccessScenario,
         TransferAuthorizationScenario, TransferEventScenario, TransferSuccessScenario,
