@@ -1,3 +1,4 @@
+use soroban_sdk::testutils::Events;
 #![no_std]
 
 use conformance_core::result::{Status, TestResult};
@@ -84,8 +85,8 @@ impl<F: Sep41Fixture> Scenario<F> for MetaNameScenario {
         let client = TokenClient::new(env, fixture.token_contract_id());
         let _name = client.name();
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Token name function executes successfully",
             observed_behavior: "Token name returned without error",
@@ -105,8 +106,8 @@ impl<F: Sep41Fixture> Scenario<F> for MetaSymbolScenario {
         let client = TokenClient::new(env, fixture.token_contract_id());
         let _symbol = client.symbol();
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Token symbol function executes successfully",
             observed_behavior: "Token symbol returned without error",
@@ -126,8 +127,8 @@ impl<F: Sep41Fixture> Scenario<F> for MetaDecimalsScenario {
         let client = TokenClient::new(env, fixture.token_contract_id());
         let _decimals = client.decimals();
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Token decimals function executes successfully",
             observed_behavior: "Token decimals returned without error",
@@ -154,16 +155,16 @@ impl<F: Sep41Fixture> Scenario<F> for BalInitialScenario {
         let balance = client.balance(account);
         if balance == expected {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "Account has expected initial balance",
                 observed_behavior: "Balance matched expected value",
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Account has expected initial balance",
                 observed_behavior: "Balance did not match expected value",
@@ -186,16 +187,16 @@ impl<F: Sep41Fixture> Scenario<F> for BalZeroScenario {
         let balance = client.balance(account);
         if balance == 0 {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "New account balance is zero",
                 observed_behavior: "Balance is exactly zero",
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "New account balance is zero",
                 observed_behavior: "Balance is non-zero",
@@ -226,8 +227,8 @@ impl<F: Sep41Fixture> Scenario<F> for TransferSuccessScenario {
 
         if initial_alice < transfer_amount {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Error,
                 expected_behavior: "Fixture must have enough balance",
                 observed_behavior: "Insufficient balance to perform test",
@@ -252,16 +253,16 @@ impl<F: Sep41Fixture> Scenario<F> for TransferSuccessScenario {
             && final_bob == initial_bob + transfer_amount
         {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "Balances update correctly based on transfer",
                 observed_behavior: "Balances updated correctly",
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Balances update correctly based on transfer",
                 observed_behavior: "Balances did not update correctly",
@@ -324,16 +325,16 @@ impl<F: Sep41Fixture> Scenario<F> for TransferEventScenario {
 
         if found {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "Emits transfer event with correct topics and data",
                 observed_behavior: "Transfer event found matching specification",
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Emits transfer event with correct topics and data",
                 observed_behavior: "Transfer event missing or lacked required data",
@@ -371,8 +372,8 @@ impl<F: Sep41Fixture> Scenario<F> for TransferInsufficientBalanceScenario {
 
         if result.is_ok() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Transfer fails when balance is insufficient",
                 observed_behavior: "Transfer succeeded unexpectedly",
@@ -384,8 +385,8 @@ impl<F: Sep41Fixture> Scenario<F> for TransferInsufficientBalanceScenario {
 
         if final_alice != initial_alice || final_bob != initial_bob {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Balances remain unchanged after failure",
                 observed_behavior: "Balances were mutated despite failed transfer",
@@ -393,8 +394,8 @@ impl<F: Sep41Fixture> Scenario<F> for TransferInsufficientBalanceScenario {
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Transfer fails and balances are preserved",
             observed_behavior: "Transfer failed as expected without mutating state",
@@ -422,8 +423,8 @@ impl<F: Sep41Fixture> Scenario<F> for TransferAuthorizationScenario {
         let result = client.try_transfer(alice, bob, &transfer_amount);
         if result.is_ok() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Transfer requires Soroban authorization from sender",
                 observed_behavior: "Transfer succeeded without authorization",
@@ -435,8 +436,8 @@ impl<F: Sep41Fixture> Scenario<F> for TransferAuthorizationScenario {
 
         if final_alice != initial_alice || final_bob != initial_bob {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Balances unchanged on failed auth",
                 observed_behavior: "Balances mutated without authorization",
@@ -444,8 +445,8 @@ impl<F: Sep41Fixture> Scenario<F> for TransferAuthorizationScenario {
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Transfer requires authorization",
             observed_behavior: "Transfer failed when unauthorized",
@@ -481,8 +482,8 @@ impl<F: Sep41Fixture> Scenario<F> for TransferNegativeAmountScenario {
 
         if result.is_ok() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Transfer fails with negative amount",
                 observed_behavior: "Transfer succeeded with negative amount",
@@ -492,8 +493,8 @@ impl<F: Sep41Fixture> Scenario<F> for TransferNegativeAmountScenario {
         let final_alice = client.balance(alice);
         if initial_alice != final_alice {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Balances remain unchanged",
                 observed_behavior: "Balances mutated on negative transfer",
@@ -501,8 +502,8 @@ impl<F: Sep41Fixture> Scenario<F> for TransferNegativeAmountScenario {
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Transfer fails and state is preserved",
             observed_behavior: "Transfer failed as expected",
@@ -530,8 +531,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceQueryScenario {
         let initial_allowance = client.allowance(alice, carol);
         if initial_allowance != 0 {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Initial allowance is zero",
                 observed_behavior: "Initial allowance is non-zero",
@@ -554,16 +555,16 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceQueryScenario {
         let final_allowance = client.allowance(alice, carol);
         if final_allowance == amount {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "Allowance reflects approved amount",
                 observed_behavior: "Allowance matched approved amount",
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Allowance reflects approved amount",
                 observed_behavior: "Allowance did not match approved amount",
@@ -600,8 +601,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceApproveScenario {
 
         if result.is_err() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Approve executes successfully",
                 observed_behavior: "Approve failed unexpectedly",
@@ -611,8 +612,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceApproveScenario {
         let allowance = client.allowance(alice, carol);
         if allowance != amount {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "allowance(owner, spender) equals approved amount",
                 observed_behavior: "Allowance did not accurately match approval",
@@ -620,8 +621,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceApproveScenario {
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Approve successfully commits exact allowance to state",
             observed_behavior: "Approve verified successfully",
@@ -689,9 +690,9 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceTransferFromScenario {
             && at_exp_allowance == amount - transfer_amount
             && expired_allowance == 0
         {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "transfer_from moves tokens exactly, reduces allowance, and preserves expiration", observed_behavior: "State transitions correctly processed" }
+            TestResult { test_id: <Self as Scenario<F>>::id(self), description: <Self as Scenario<F>>::description(self), status: Status::Pass, expected_behavior: "transfer_from moves tokens exactly, reduces allowance, and preserves expiration", observed_behavior: "State transitions correctly processed" }
         } else {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "transfer_from moves tokens exactly, reduces allowance, and preserves expiration", observed_behavior: "State mutations failed to match specification requirements" }
+            TestResult { test_id: <Self as Scenario<F>>::id(self), description: <Self as Scenario<F>>::description(self), status: Status::Fail, expected_behavior: "transfer_from moves tokens exactly, reduces allowance, and preserves expiration", observed_behavior: "State mutations failed to match specification requirements" }
         }
     }
 }
@@ -731,16 +732,16 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceExpirationScenario {
 
         if exact_allowance == amount && expired_allowance == 0 {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "Allowance is zero when current > live_until_ledger",
                 observed_behavior: "Expiration semantics correctly adhered to",
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Allowance is zero when current > live_until_ledger",
                 observed_behavior: "Expiration semantics violated",
@@ -797,8 +798,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceInsufficientScenario {
 
         if result.is_ok() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "transfer_from fails on insufficient allowance",
                 observed_behavior: "transfer_from succeeded unexpectedly",
@@ -810,8 +811,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceInsufficientScenario {
             || final_allowance != initial_allowance
         {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "State unchanged on failure",
                 observed_behavior: "State mutated despite failed transfer_from",
@@ -819,8 +820,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceInsufficientScenario {
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Transfer fails cleanly without mutating state",
             observed_behavior: "Transfer rejected correctly",
@@ -863,8 +864,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceUnauthorizedApproveScenario {
 
         if result.is_ok() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Approve requires from authorization",
                 observed_behavior: "Approve succeeded without authorization",
@@ -874,8 +875,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceUnauthorizedApproveScenario {
         let final_allowance = client.allowance(alice, carol);
         if final_allowance != amount {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Allowance unchanged after failed auth",
                 observed_behavior: "Allowance mutated without authorization",
@@ -883,8 +884,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceUnauthorizedApproveScenario {
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Unauthorized approve fails cleanly",
             observed_behavior: "Failed cleanly without state mutation",
@@ -931,8 +932,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceUnauthorizedTransferFromScenario 
 
         if result.is_ok() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "transfer_from requires spender authorization",
                 observed_behavior: "transfer_from succeeded without authorization",
@@ -948,8 +949,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceUnauthorizedTransferFromScenario 
             || final_allowance != initial_allowance
         {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "State unchanged on failed auth",
                 observed_behavior: "State mutated without authorization",
@@ -957,8 +958,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceUnauthorizedTransferFromScenario 
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Unauthorized transfer_from fails cleanly",
             observed_behavior: "Failed cleanly without authorization",
@@ -1022,8 +1023,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceEventScenario {
 
         if found_topic {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "Emits approve event with required topics and data",
                 observed_behavior:
@@ -1031,8 +1032,8 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceEventScenario {
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Emits approve event with required topics and data",
                 observed_behavior: "Approve event missing or lacked required semantic data",
@@ -1083,16 +1084,16 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceZeroRevocationScenario {
 
         if initial_allowance == amount && revoked_allowance == 0 {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "approve with amount=0 revokes allowance completely",
                 observed_behavior: "Allowance successfully revoked to 0",
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "approve with amount=0 revokes allowance completely",
                 observed_behavior: "Allowance was not revoked accurately",
@@ -1146,16 +1147,16 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceOverwriteScenario {
 
         if final_allowance == amount2 && at_exp2_allowance == amount2 {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "Subsequent approve fully overwrites amount and expiration",
                 observed_behavior: "Allowance successfully overwritten",
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Subsequent approve fully overwrites amount and expiration",
                 observed_behavior: "Allowance overwrite failed",
@@ -1184,8 +1185,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnSuccessScenario {
 
         if initial_alice < burn_amount {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Error,
                 expected_behavior: "Alice has enough balance",
                 observed_behavior: "Insufficient balance for setup",
@@ -1207,16 +1208,16 @@ impl<F: Sep41Fixture> Scenario<F> for BurnSuccessScenario {
 
         if final_alice == initial_alice - burn_amount {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "Balance decreases by burn amount",
                 observed_behavior: "Balance decreased correctly",
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Balance decreases by burn amount",
                 observed_behavior: "Balance did not decrease correctly",
@@ -1243,8 +1244,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnAuthorizationScenario {
 
         if result.is_ok() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Burn requires from authorization",
                 observed_behavior: "Burn succeeded without authorization",
@@ -1254,8 +1255,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnAuthorizationScenario {
         let final_alice = client.balance(alice);
         if final_alice != initial_alice {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "State remains unchanged after failed auth",
                 observed_behavior: "Balance mutated despite failed auth",
@@ -1263,8 +1264,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnAuthorizationScenario {
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Burn fails cleanly without authorization",
             observed_behavior: "Failed cleanly",
@@ -1326,8 +1327,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromSuccessScenario {
             && expired_allowance == 0
         {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior:
                     "burn_from decreases balance and allowance, preserves expiration",
@@ -1335,8 +1336,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromSuccessScenario {
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior:
                     "burn_from decreases balance and allowance, preserves expiration",
@@ -1382,8 +1383,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromAuthorizationScenario {
 
         if result.is_ok() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "burn_from requires spender auth",
                 observed_behavior: "burn_from succeeded without auth",
@@ -1395,8 +1396,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromAuthorizationScenario {
 
         if final_alice != initial_alice || final_allowance != initial_allowance {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "State unchanged on failed auth",
                 observed_behavior: "State mutated without authorization",
@@ -1404,8 +1405,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromAuthorizationScenario {
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Unauthorized burn_from fails cleanly",
             observed_behavior: "Failed cleanly",
@@ -1440,8 +1441,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnInsufficientBalanceScenario {
 
         if result.is_ok() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Burn fails when balance is insufficient",
                 observed_behavior: "Burn succeeded unexpectedly",
@@ -1451,8 +1452,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnInsufficientBalanceScenario {
         let final_alice = client.balance(alice);
         if final_alice != initial_alice {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Balance unchanged after failure",
                 observed_behavior: "Balance mutated despite failed burn",
@@ -1460,8 +1461,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnInsufficientBalanceScenario {
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "Burn fails cleanly on insufficient balance",
             observed_behavior: "Burn rejected correctly",
@@ -1510,8 +1511,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromInsufficientAllowanceScenario {
 
         if result.is_ok() {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "burn_from fails on insufficient allowance",
                 observed_behavior: "burn_from succeeded unexpectedly",
@@ -1523,8 +1524,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromInsufficientAllowanceScenario {
 
         if final_alice != initial_alice || final_allowance != initial_allowance {
             return TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "State unchanged on failure",
                 observed_behavior: "State mutated despite failed burn_from",
@@ -1532,8 +1533,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromInsufficientAllowanceScenario {
         }
 
         TestResult {
-            test_id: self.id(),
-            description: self.description(),
+            test_id: <Self as Scenario<F>>::id(self),
+            description: <Self as Scenario<F>>::description(self),
             status: Status::Pass,
             expected_behavior: "burn_from fails cleanly without mutating state",
             observed_behavior: "Delegated burn rejected correctly",
@@ -1589,16 +1590,16 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
 
         if found_valid_event {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Pass,
                 expected_behavior: "Emits burn event with exact topics and valid data format",
                 observed_behavior: "Burn event found matching exact SEP-41 semantic requirements",
             }
         } else {
             TestResult {
-                test_id: self.id(),
-                description: self.description(),
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
                 status: Status::Fail,
                 expected_behavior: "Emits burn event with exact topics and valid data format",
                 observed_behavior:
