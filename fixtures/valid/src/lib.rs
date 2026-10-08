@@ -95,14 +95,15 @@ mod test {
     use conformance_sep41::{
         AllowanceApproveScenario, AllowanceEventScenario, AllowanceExpirationScenario,
         AllowanceInsufficientScenario, AllowanceOverwriteScenario, AllowanceQueryScenario,
-        AllowanceTransferFromScenario, AllowanceUnauthorizedApproveScenario,
-        AllowanceUnauthorizedTransferFromScenario, AllowanceZeroRevocationScenario,
-        BalInitialScenario, BalZeroScenario, BurnAuthorizationScenario, BurnEventScenario,
-        BurnFromAuthorizationScenario, BurnFromInsufficientAllowanceScenario,
-        BurnFromSuccessScenario, BurnInsufficientBalanceScenario, BurnSuccessScenario,
-        MetaDecimalsScenario, MetaNameScenario, MetaSymbolScenario, TransferAuthorizationScenario,
-        TransferEventScenario, TransferInsufficientBalanceScenario, TransferNegativeAmountScenario,
-        TransferSuccessScenario, AllowanceTransferFromEventScenario, BurnFromEventScenario,
+        AllowanceTransferFromEventScenario, AllowanceTransferFromScenario,
+        AllowanceUnauthorizedApproveScenario, AllowanceUnauthorizedTransferFromScenario,
+        AllowanceZeroRevocationScenario, BalInitialScenario, BalZeroScenario,
+        BurnAuthorizationScenario, BurnEventScenario, BurnFromAuthorizationScenario,
+        BurnFromEventScenario, BurnFromInsufficientAllowanceScenario, BurnFromSuccessScenario,
+        BurnInsufficientBalanceScenario, BurnSuccessScenario, MetaDecimalsScenario,
+        MetaNameScenario, MetaSymbolScenario, TransferAuthorizationScenario, TransferEventScenario,
+        TransferInsufficientBalanceScenario, TransferNegativeAmountScenario,
+        TransferSuccessScenario,
     };
 
     #[test]
