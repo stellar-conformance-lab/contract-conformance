@@ -68,6 +68,20 @@ You can execute the full suite natively leveraging the Soroban test environment 
 cargo test --workspace
 ```
 
+## Command Line Interface
+
+You can run the conformance engine against supported profiles using the CLI:
+
+**Installed / Release form:**
+```bash
+stellar-conform test --profile sep-41
+```
+
+**Development invocation:**
+```bash
+cargo run -p conformance-cli -- test --profile sep-41
+```
+
 ## How to add a new fixture
 
 1. Implement the `Fixture` and profile-specific traits (e.g., `Sep41Fixture`) for your custom contract.

@@ -4,6 +4,7 @@ members = [
     "crates/conformance-core",
     "crates/conformance-sep41",
     "crates/conformance-report",
+    "crates/conformance-cli",
     "fixtures/valid",
     "fixtures/invalid",
 ]
