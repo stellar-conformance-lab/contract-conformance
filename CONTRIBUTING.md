@@ -19,6 +19,16 @@ We follow strict roadmap-driven development. Contributors must review [ROADMAP.m
 * Follow the architecture established for the current phase.
 * Do not introduce unnecessary dependencies.
 
+## Local Validation Commands
+Before opening a pull request, ensure your code passes the following quality gates locally. These exact commands are also run by our CI workflow for every pull request:
+
+```bash
+cargo fmt --all -- --check
+cargo check --workspace --all-targets
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+```
+
 ## Testing Expectations
 * Provide both positive and negative tests.
 * Ensure deterministic tests.
