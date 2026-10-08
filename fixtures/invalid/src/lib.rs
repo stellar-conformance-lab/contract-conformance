@@ -359,8 +359,8 @@ mod tests {
 #[cfg(test)]
 mod property_tests {
     use super::*;
-    use proptest::test_runner::TestRunner;
     use conformance_sep41::proptest::*;
+    use proptest::test_runner::TestRunner;
 
     #[test]
     fn test_broken_transfer_detected_by_proptest() {
@@ -368,7 +368,10 @@ mod property_tests {
         let res = runner.run(&(0i128..=1000), |amount| {
             check_transfer_conservation(BrokenTransferFixture::new, amount)
         });
-        assert!(res.is_err(), "Proptest should detect broken transfer conservation");
+        assert!(
+            res.is_err(),
+            "Proptest should detect broken transfer conservation"
+        );
     }
 
     #[test]
@@ -377,6 +380,9 @@ mod property_tests {
         let res = runner.run(&(0i128..=1000, 0i128..=1000), |(app, tr)| {
             check_allowance_consistency(BrokenAllowanceConsumptionFixture::new, app, tr)
         });
-        assert!(res.is_err(), "Proptest should detect broken allowance consistency");
+        assert!(
+            res.is_err(),
+            "Proptest should detect broken allowance consistency"
+        );
     }
 }

@@ -163,7 +163,7 @@ pub fn check_allowance_insufficient<F: Sep41Fixture + Fixture>(
     prop_assume!(extra > 0);
     let transfer_amount = approve_amount.saturating_add(extra);
     prop_assume!(transfer_amount > approve_amount);
-    
+
     // Make sure we have enough balance, so it fails ONLY due to allowance
     if from_before < transfer_amount {
         // Mint more to `from` if needed, but since we can't mint via SEP41, we just assume it's small enough or use `prop_assume`.

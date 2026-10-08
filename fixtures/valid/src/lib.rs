@@ -210,8 +210,8 @@ mod test {
 #[cfg(test)]
 mod property_tests {
     use super::*;
-    use proptest::prelude::*;
     use conformance_sep41::proptest::*;
+    use proptest::prelude::*;
 
     proptest! {
         #[test]
