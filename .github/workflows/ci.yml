@@ -48,3 +48,32 @@ jobs:
           name: conformance-report
           path: conformance-report.json
           retention-days: 30
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download Report Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: conformance-report
+          path: public
+      - name: Rename file for static serving
+        run: mv public/conformance-report.json public/report.json
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
