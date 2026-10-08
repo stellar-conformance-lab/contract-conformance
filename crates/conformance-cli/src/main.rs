@@ -169,9 +169,6 @@ mod tests {
     #[test]
     fn test_missing_profile_arg() {
         let err = Cli::try_parse_from(["stellar-conform", "test"]).unwrap_err();
-        assert_eq!(
-            err.kind(),
-            clap::error::ErrorKind::MissingRequiredArgument
-        );
+        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
     }
 }
