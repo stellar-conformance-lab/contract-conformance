@@ -38,3 +38,13 @@ jobs:
 
       - name: Run Tests
         run: cargo test --workspace
+
+      - name: Generate JSON Conformance Report
+        run: cargo run -p conformance-cli -- test --profile sep-41 --output json > conformance-report.json
+
+      - name: Upload Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-report
+          path: conformance-report.json
+          retention-days: 30
