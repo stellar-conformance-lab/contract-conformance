@@ -21,7 +21,9 @@ Understanding the framework relies on clearly distinguishing the following layer
 
 ## Current Scope and Status
 
-The project is currently under active development. **SEP-41 (Token Standard) v0.5.2** is the inaugural conformance profile. It evaluates metadata, balance, transfers, allowances, burns, events, and authorizations.
+The core conformance engine is stable and in active maintenance. **SEP-41 (Token Standard) v0.5.2** is the project's stable, flagship behavioral conformance profile. It evaluates metadata, balance, transfers, allowances, burns, events, and authorizations.
+
+Development of additional behavioral profiles is currently paused. Future profile expansion is strictly contingent upon the Stellar ecosystem maturing additional smart-contract standards into "Active" or "Final" status to guarantee stable normative requirements.
 
 ### Limitations / Non-goals
 This framework does **NOT** provide:

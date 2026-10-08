@@ -3,3 +3,7 @@
 .DS_Store
 .vscode/
 .idea/
+
+# Developer debug/temporary artifacts
+logs*.txt
+*.patch

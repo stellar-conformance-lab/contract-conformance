@@ -982,27 +982,17 @@ Use Soroban-compatible property-based testing facilities where appropriate.
 
 # Phase 19 — Additional Standards
 
-Only begin after SEP-41 is mature.
+**Status:** Formally Paused (as of Phase 19B Alternative Standard Research Audit).
 
-Potential future profiles:
+Phase 19 is formally paused because no sufficiently mature second behavioral Stellar smart-contract standard currently exists.
 
-```text
-profiles/
-├── sep-41/
-├── sep-50/
-└── sep-56/
-```
+After evaluating candidates including SEP-50, SEP-56, SEP-40, and SEP-57, it was determined that all relevant behavioral standards remain in "Draft" status. Implementing a conformance profile against Draft specifications creates a brittle, speculative test suite rather than authoritative validation infrastructure.
 
-Each profile must have:
+**Resumption Criteria:**
+Phase 19 may only be reopened when a relevant Stellar smart-contract behavioral standard reaches **Active** or **Final** status and provides sufficiently stable normative requirements to support deterministic conformance testing. Do not implement against Draft SEPs.
 
-* its own specification version
-* conformance matrix
-* test scenarios
-* fixtures
-* documentation
-* acceptance criteria
-
-Do not assume that adding another standard requires changing the core engine.
+**Flagship Profile Stability:**
+SEP-41 remains the project's stable, flagship behavioral conformance profile. It should remain frozen to preserve reliability, and must not be modified unless a maintenance task identifies a concrete correctness issue.
 
 ---
 
