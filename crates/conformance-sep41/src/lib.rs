@@ -5,7 +5,7 @@ use conformance_core::result::{Status, TestResult};
 use conformance_core::scenario::Scenario;
 use soroban_sdk::testutils::Ledger;
 use soroban_sdk::IntoVal;
-use soroban_sdk::{token::Client as TokenClient, Address, Env};
+use soroban_sdk::{token::Client as TokenClient, Address, Env, TryFromVal};
 
 pub trait Sep41Fixture: conformance_core::fixture::Fixture {
     fn token_contract_id(&self) -> &Address;
@@ -300,7 +300,19 @@ impl<F: Sep41Fixture> Scenario<F> for TransferEventScenario {
         let mut found = false;
         let transfer_symbol = soroban_sdk::Symbol::new(env, "transfer");
 
-        for (contract_id, topics, data) in events.into_iter() {
+        let filtered = events.filter_by_contract(fixture.token_contract_id());
+        for event in filtered.events() {
+            let soroban_sdk::xdr::ContractEventBody::V0(body) = &event.body else {
+                continue;
+            };
+            let Ok(topics) = soroban_sdk::Vec::<soroban_sdk::Val>::try_from_val(env, &body.topics)
+            else {
+                continue;
+            };
+            let Ok(data) = soroban_sdk::Val::try_from_val(env, &body.data) else {
+                continue;
+            };
+            let contract_id = fixture.token_contract_id().clone();
             if contract_id == *fixture.token_contract_id() {
                 if topics.len() >= 3 {
                     let mut iter = topics.into_iter();
@@ -308,9 +320,9 @@ impl<F: Sep41Fixture> Scenario<F> for TransferEventScenario {
                     let t1 = iter.next();
                     let t2 = iter.next();
                     if let (Some(t0), Some(t1), Some(t2)) = (t0, t1, t2) {
-                        if t0.to_val() == transfer_symbol.to_val()
-                            && t1.to_val() == alice.to_val()
-                            && t2.to_val() == bob.to_val()
+                        if t0 == transfer_symbol.into_val(env)
+                            && t1 == alice.into_val(env)
+                            && t2 == bob.into_val(env)
                         {
                             if crate::event_helpers::verify_amount_data(env, &data, transfer_amount)
                             {
@@ -997,7 +1009,19 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceEventScenario {
         let mut found_topic = false;
         let approve_symbol = soroban_sdk::Symbol::new(env, "approve");
 
-        for (contract_id, topics, data) in events.into_iter() {
+        let filtered = events.filter_by_contract(fixture.token_contract_id());
+        for event in filtered.events() {
+            let soroban_sdk::xdr::ContractEventBody::V0(body) = &event.body else {
+                continue;
+            };
+            let Ok(topics) = soroban_sdk::Vec::<soroban_sdk::Val>::try_from_val(env, &body.topics)
+            else {
+                continue;
+            };
+            let Ok(data) = soroban_sdk::Val::try_from_val(env, &body.data) else {
+                continue;
+            };
+            let contract_id = fixture.token_contract_id().clone();
             if contract_id == *fixture.token_contract_id() {
                 if topics.len() >= 3 {
                     let mut iter = topics.into_iter();
@@ -1005,9 +1029,9 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceEventScenario {
                     let t1 = iter.next();
                     let t2 = iter.next();
                     if let (Some(t0), Some(t1), Some(t2)) = (t0, t1, t2) {
-                        if t0.to_val() == approve_symbol.to_val()
-                            && t1.to_val() == alice.to_val()
-                            && t2.to_val() == carol.to_val()
+                        if t0 == approve_symbol.into_val(env)
+                            && t1 == alice.into_val(env)
+                            && t2 == carol.into_val(env)
                         {
                             if crate::event_helpers::verify_approve_data(
                                 env, &data, amount, expiration,
@@ -1570,14 +1594,26 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
         let mut found_valid_event = false;
         let burn_symbol = soroban_sdk::Symbol::new(env, "burn");
 
-        for (contract_id, topics, data) in events.into_iter() {
+        let filtered = events.filter_by_contract(fixture.token_contract_id());
+        for event in filtered.events() {
+            let soroban_sdk::xdr::ContractEventBody::V0(body) = &event.body else {
+                continue;
+            };
+            let Ok(topics) = soroban_sdk::Vec::<soroban_sdk::Val>::try_from_val(env, &body.topics)
+            else {
+                continue;
+            };
+            let Ok(data) = soroban_sdk::Val::try_from_val(env, &body.data) else {
+                continue;
+            };
+            let contract_id = fixture.token_contract_id().clone();
             if contract_id == *fixture.token_contract_id() {
                 if topics.len() >= 2 {
                     let mut iter = topics.into_iter();
                     let t0 = iter.next();
                     let t1 = iter.next();
                     if let (Some(t0), Some(t1)) = (t0, t1) {
-                        if t0.to_val() == burn_symbol.to_val() && t1.to_val() == alice.to_val() {
+                        if t0 == burn_symbol.into_val(env) && t1 == alice.into_val(env) {
                             if crate::event_helpers::verify_amount_data(env, &data, burn_amount) {
                                 found_valid_event = true;
                                 break;
