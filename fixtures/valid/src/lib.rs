@@ -26,7 +26,9 @@ impl ValidSep41Fixture {
         let carol = Address::generate(env);
 
         // Use the official Stellar Asset Contract as the deterministic reference implementation under test.
-        let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+        let token_id = env
+            .register_stellar_asset_contract_v2(admin.clone())
+            .address();
 
         Self {
             admin,
