@@ -60,15 +60,23 @@ pub fn check_transfer_insufficient_balance<F: Sep41Fixture + Fixture>(
     // Soroban SDK doesn't have try_transfer generated in the standard token client interface,
     // wait! It is generated? Let's check `try_transfer` or `env.try_invoke_contract`.
     // We can use `env.try_invoke_contract` directly.
-    use soroban_sdk::{vec, Symbol, IntoVal};
-    
+    use soroban_sdk::{vec, IntoVal, Symbol};
+
     let res = env.try_invoke_contract::<(), _>(
         fixture.token_contract_id(),
         &Symbol::new(&env, "transfer"),
-        vec![&env, sender.into_val(&env), receiver.into_val(&env), amount.into_val(&env)]
+        vec![
+            &env,
+            sender.into_val(&env),
+            receiver.into_val(&env),
+            amount.into_val(&env),
+        ],
     );
 
-    prop_assert!(res.is_err(), "Transfer should fail for insufficient balance");
+    prop_assert!(
+        res.is_err(),
+        "Transfer should fail for insufficient balance"
+    );
 
     // Stability: state should remain unchanged
     prop_assert_eq!(client.balance(sender), sender_before);
@@ -165,14 +173,23 @@ pub fn check_allowance_insufficient<F: Sep41Fixture + Fixture>(
     let expiration_ledger = env.ledger().sequence() + 200;
     client.approve(from, spender, &approve_amount, &expiration_ledger);
 
-    use soroban_sdk::{vec, Symbol, IntoVal};
+    use soroban_sdk::{vec, IntoVal, Symbol};
     let res = env.try_invoke_contract::<(), _>(
         fixture.token_contract_id(),
         &Symbol::new(&env, "transfer_from"),
-        vec![&env, spender.into_val(&env), from.into_val(&env), to.into_val(&env), transfer_amount.into_val(&env)]
+        vec![
+            &env,
+            spender.into_val(&env),
+            from.into_val(&env),
+            to.into_val(&env),
+            transfer_amount.into_val(&env),
+        ],
     );
 
-    prop_assert!(res.is_err(), "transfer_from should fail for insufficient allowance");
+    prop_assert!(
+        res.is_err(),
+        "transfer_from should fail for insufficient allowance"
+    );
 
     // Stability: state should remain unchanged
     prop_assert_eq!(client.balance(from), from_before);
