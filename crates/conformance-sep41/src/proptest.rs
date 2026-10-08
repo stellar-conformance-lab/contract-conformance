@@ -14,6 +14,8 @@ pub fn check_transfer_conservation<F: Sep41Fixture + Fixture>(
     if fixture.setup(&env).is_err() {
         return Err(TestCaseError::Fail("Setup failed".into()));
     }
+    // Re-enable mock_all_auths in case fixture.setup() overrode it
+    env.mock_all_auths();
 
     let client = TokenClient::new(&env, fixture.token_contract_id());
     let sender = fixture.test_account_1();
@@ -46,6 +48,8 @@ pub fn check_transfer_insufficient_balance<F: Sep41Fixture + Fixture>(
     if fixture.setup(&env).is_err() {
         return Err(TestCaseError::Fail("Setup failed".into()));
     }
+    // Re-enable mock_all_auths in case fixture.setup() overrode it
+    env.mock_all_auths();
 
     let client = TokenClient::new(&env, fixture.token_contract_id());
     let sender = fixture.test_account_1();
@@ -97,6 +101,8 @@ pub fn check_allowance_consistency<F: Sep41Fixture + Fixture>(
     if fixture.setup(&env).is_err() {
         return Err(TestCaseError::Fail("Setup failed".into()));
     }
+    // Re-enable mock_all_auths in case fixture.setup() overrode it
+    env.mock_all_auths();
 
     let client = TokenClient::new(&env, fixture.token_contract_id());
     let from = fixture.test_account_1();
@@ -151,6 +157,8 @@ pub fn check_allowance_insufficient<F: Sep41Fixture + Fixture>(
     if fixture.setup(&env).is_err() {
         return Err(TestCaseError::Fail("Setup failed".into()));
     }
+    // Re-enable mock_all_auths in case fixture.setup() overrode it
+    env.mock_all_auths();
 
     let client = TokenClient::new(&env, fixture.token_contract_id());
     let from = fixture.test_account_1();
