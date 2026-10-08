@@ -1,0 +1,15 @@
+name: "Stellar Contract Conformance"
+description: "Run Stellar Contract Conformance"
+inputs:
+  profile:
+    description: "Conformance profile to run"
+    required: false
+    default: "sep-41"
+runs:
+  using: "composite"
+  steps:
+    - name: Run Conformance CLI
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}/../../..
+        cargo run -p conformance-cli -- test --profile ${{ inputs.profile }}

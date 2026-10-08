@@ -1,0 +1,42 @@
+name: Action Integration Tests
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-default:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Action (Root Default)
+        uses: ./
+      - name: Run Action (Nested Default)
+        uses: ./.github/actions/conformance
+  
+  test-explicit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Action (Explicit)
+        uses: ./
+        with:
+          profile: sep-41
+  
+  test-failure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Action (Unsupported)
+        id: failed-run
+        continue-on-error: true
+        uses: ./
+        with:
+          profile: unknown
+      - name: Verify Failure
+        if: steps.failed-run.outcome == 'failure'
+        run: echo "Action correctly failed on invalid profile."
+      - name: Fail if it passed
+        if: steps.failed-run.outcome == 'success'
+        run: exit 1

@@ -82,6 +82,33 @@ stellar-conform test --profile sep-41
 cargo run -p conformance-cli -- test --profile sep-41
 ```
 
+## GitHub Action Integration
+
+A consuming repository can natively run SEP-41 conformance checks via GitHub Actions. Under the hood, this action invokes the `stellar-conform` CLI.
+
+**Basic usage:**
+```yaml
+name: Contract Conformance
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: stellar-conformance-lab/contract-conformance@main
+```
+
+**Inputs:**
+* `profile` (optional): The conformance profile to execute. Defaults to `sep-41`.
+
+**Failure Behavior:**
+If the selected profile encounters a failure, error, or if an unsupported profile is supplied, the action explicitly inherits the CLI's non-zero exit code and fails the CI job appropriately.
+
 ## How to add a new fixture
 
 1. Implement the `Fixture` and profile-specific traits (e.g., `Sep41Fixture`) for your custom contract.
