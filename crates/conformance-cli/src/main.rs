@@ -20,6 +20,9 @@ pub enum Commands {
         /// The conformance profile to test
         #[arg(long)]
         profile: String,
+        /// The output format (text or json)
+        #[arg(long, default_value = "text")]
+        output: String,
     },
 }
 
@@ -104,7 +107,7 @@ fn run_sep41() -> Vec<conformance_core::result::TestResult> {
 
 pub fn execute_cli(cli: Cli) -> Result<i32, String> {
     match &cli.command {
-        Commands::Test { profile } => {
+        Commands::Test { profile, output } => {
             if profile.to_lowercase() != "sep-41" {
                 return Err(format!("Error: unsupported profile '{}'", profile));
             }
@@ -112,21 +115,28 @@ pub fn execute_cli(cli: Cli) -> Result<i32, String> {
             let results = run_sep41();
             let report = ConformanceReport::new("SEP-41", "valid", &results);
 
-            println!("Profile: {}", report.profile);
-            println!(
-                "Status: {}",
-                match report.status {
-                    Status::Pass => "PASS",
-                    Status::Fail => "FAIL",
-                    Status::Error => "ERROR",
-                    Status::Skipped => "SKIPPED",
+            if output.to_lowercase() == "json" {
+                match report.to_json() {
+                    Ok(json) => println!("{}", json),
+                    Err(e) => return Err(format!("Error serializing JSON: {}", e)),
                 }
-            );
-            println!("Total: {}", report.summary.total);
-            println!("Passed: {}", report.summary.passed);
-            println!("Failed: {}", report.summary.failed);
-            println!("Errors: {}", report.summary.errors);
-            println!("Skipped: {}", report.summary.skipped);
+            } else {
+                println!("Profile: {}", report.profile);
+                println!(
+                    "Status: {}",
+                    match report.status {
+                        Status::Pass => "PASS",
+                        Status::Fail => "FAIL",
+                        Status::Error => "ERROR",
+                        Status::Skipped => "SKIPPED",
+                    }
+                );
+                println!("Total: {}", report.summary.total);
+                println!("Passed: {}", report.summary.passed);
+                println!("Failed: {}", report.summary.failed);
+                println!("Errors: {}", report.summary.errors);
+                println!("Skipped: {}", report.summary.skipped);
+            }
 
             match report.status {
                 Status::Pass => Ok(0),
@@ -157,6 +167,13 @@ mod tests {
         let cli = Cli::try_parse_from(["stellar-conform", "test", "--profile", "sep-41"]).unwrap();
         let code = execute_cli(cli).expect("Should succeed");
         assert_eq!(code, 0, "All valid fixture scenarios should pass");
+    }
+
+    #[test]
+    fn test_json_output() {
+        let cli = Cli::try_parse_from(["stellar-conform", "test", "--profile", "sep-41", "--output", "json"]).unwrap();
+        let code = execute_cli(cli).expect("Should succeed");
+        assert_eq!(code, 0, "JSON output should succeed");
     }
 
     #[test]
