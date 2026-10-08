@@ -1,5 +1,5 @@
-use soroban_sdk::testutils::Events;
 #![no_std]
+use soroban_sdk::testutils::Events;
 
 use conformance_core::result::{Status, TestResult};
 use conformance_core::scenario::Scenario;
