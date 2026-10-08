@@ -13,6 +13,55 @@ pub trait Sep41Fixture: conformance_core::fixture::Fixture {
     fn expected_initial_balance(&self) -> i128;
 }
 
+pub mod event_helpers {
+    use soroban_sdk::{Env, Val, Symbol, Map, Vec as SorobanVec, TryFromVal};
+
+    pub fn verify_amount_data(env: &Env, data: &Val, expected_amount: i128) -> bool {
+        if let Ok(amount) = i128::try_from_val(env, data) {
+            return amount == expected_amount;
+        }
+
+        if let Ok(map) = Map::<Symbol, Val>::try_from_val(env, data) {
+            if let Some(val) = map.get(Symbol::new(env, "amount")) {
+                if let Ok(amount) = i128::try_from_val(env, &val) {
+                    return amount == expected_amount;
+                }
+            }
+        }
+        false
+    }
+
+    pub fn verify_approve_data(env: &Env, data: &Val, expected_amount: i128, expected_expiration: u32) -> bool {
+        if let Ok(vec) = SorobanVec::<Val>::try_from_val(env, data) {
+            if vec.len() >= 2 {
+                let mut iter = vec.into_iter();
+                let v0 = iter.next().unwrap();
+                let v1 = iter.next().unwrap();
+                if let Ok(amount) = i128::try_from_val(env, &v0) {
+                    if let Ok(expiration) = u32::try_from_val(env, &v1) {
+                        if amount == expected_amount && expiration == expected_expiration {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Ok(map) = Map::<Symbol, Val>::try_from_val(env, data) {
+            if let Some(val_amount) = map.get(Symbol::new(env, "amount")) {
+                if let Some(val_exp) = map.get(Symbol::new(env, "live_until_ledger")) {
+                    if let Ok(amount) = i128::try_from_val(env, &val_amount) {
+                        if let Ok(expiration) = u32::try_from_val(env, &val_exp) {
+                            return amount == expected_amount && expiration == expected_expiration;
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+}
+
 // -----------------------------------------------------------------------------
 // METADATA CONFORMANCE
 // -----------------------------------------------------------------------------
@@ -147,21 +196,31 @@ impl<F: Sep41Fixture> Scenario<F> for TransferEventScenario {
         let mut found = false;
         let transfer_symbol = soroban_sdk::Symbol::new(env, "transfer");
 
-        for (contract_id, topics, _data) in events.into_iter() {
+        for (contract_id, topics, data) in events.into_iter() {
             if contract_id == *fixture.token_contract_id() {
-                for topic in topics.into_iter() {
-                    if topic.to_val() == transfer_symbol.to_val() {
-                        found = true;
-                        break;
+                if topics.len() >= 3 {
+                    let mut iter = topics.into_iter();
+                    let t0 = iter.next();
+                    let t1 = iter.next();
+                    let t2 = iter.next();
+                    if let (Some(t0), Some(t1), Some(t2)) = (t0, t1, t2) {
+                        if t0.to_val() == transfer_symbol.to_val() && 
+                           t1.to_val() == alice.to_val() && 
+                           t2.to_val() == bob.to_val() {
+                            if crate::event_helpers::verify_amount_data(env, &data, transfer_amount) {
+                                found = true;
+                                break;
+                            }
+                        }
                     }
                 }
             }
         }
 
         if found {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Emits transfer event", observed_behavior: "Transfer event found" }
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Emits transfer event with correct topics and data", observed_behavior: "Transfer event found matching specification" }
         } else {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Emits transfer event", observed_behavior: "Transfer event missing" }
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Emits transfer event with correct topics and data", observed_behavior: "Transfer event missing or lacked required data" }
         }
     }
 }
@@ -475,30 +534,31 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceEventScenario {
         let mut found_topic = false;
         let approve_symbol = soroban_sdk::Symbol::new(env, "approve");
 
-        for (contract_id, topics, _data) in events.into_iter() {
+        for (contract_id, topics, data) in events.into_iter() {
             if contract_id == *fixture.token_contract_id() {
-                let mut has_symbol = false;
-                let mut has_owner = false;
-                let mut has_spender = false;
-                
-                for topic in topics.into_iter() {
-                    let val = topic.to_val();
-                    if val == approve_symbol.to_val() { has_symbol = true; }
-                    if val == alice.to_val() { has_owner = true; }
-                    if val == carol.to_val() { has_spender = true; }
-                }
-
-                if has_symbol && has_owner && has_spender {
-                    found_topic = true;
-                    break;
+                if topics.len() >= 3 {
+                    let mut iter = topics.into_iter();
+                    let t0 = iter.next();
+                    let t1 = iter.next();
+                    let t2 = iter.next();
+                    if let (Some(t0), Some(t1), Some(t2)) = (t0, t1, t2) {
+                        if t0.to_val() == approve_symbol.to_val() && 
+                           t1.to_val() == alice.to_val() && 
+                           t2.to_val() == carol.to_val() {
+                            if crate::event_helpers::verify_approve_data(env, &data, amount, expiration) {
+                                found_topic = true;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
 
         if found_topic {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Emits approve event with required topics", observed_behavior: "Approve event found with required semantic topics" }
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Emits approve event with required topics and data", observed_behavior: "Approve event found with required semantic topics and exact data" }
         } else {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Emits approve event with required topics", observed_behavior: "Approve event missing required semantic topics" }
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Emits approve event with required topics and data", observed_behavior: "Approve event missing or lacked required semantic data" }
         }
     }
 }
@@ -756,45 +816,17 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
 
         for (contract_id, topics, data) in events.into_iter() {
             if contract_id == *fixture.token_contract_id() {
-                let mut is_burn = false;
-                
                 if topics.len() >= 2 {
                     let mut iter = topics.into_iter();
                     let t0 = iter.next();
                     let t1 = iter.next();
                     if let (Some(t0), Some(t1)) = (t0, t1) {
                         if t0.to_val() == burn_symbol.to_val() && t1.to_val() == alice.to_val() {
-                            is_burn = true;
-                        }
-                    }
-                }
-
-                if is_burn {
-                    use soroban_sdk::TryFromVal;
-                    
-                    let mut data_matches = false;
-
-                    // Try single-value representation: i128
-                    if let Ok(amount) = i128::try_from_val(env, &data) {
-                        if amount == burn_amount {
-                            data_matches = true;
-                        }
-                    }
-
-                    // Try map representation: { amount: i128 }
-                    if !data_matches {
-                        if let Ok(map) = soroban_sdk::Map::<soroban_sdk::Symbol, i128>::try_from_val(env, &data) {
-                            if let Some(amount) = map.get(soroban_sdk::Symbol::new(env, "amount")) {
-                                if amount == burn_amount {
-                                    data_matches = true;
-                                }
+                            if crate::event_helpers::verify_amount_data(env, &data, burn_amount) {
+                                found_valid_event = true;
+                                break;
                             }
                         }
-                    }
-
-                    if data_matches {
-                        found_valid_event = true;
-                        break;
                     }
                 }
             }
