@@ -109,6 +109,25 @@ jobs:
 **Failure Behavior:**
 If the selected profile encounters a failure, error, or if an unsupported profile is supplied, the action explicitly inherits the CLI's non-zero exit code and fails the CI job appropriately.
 
+## Property-Based Testing
+
+To supplement the deterministic scenario suite, Stellar Contract Conformance includes property-based tests using `proptest`. While handwritten scenarios cover specific fixed inputs, property testing aims to discover edge cases by evaluating thousands of dynamically generated, valid inputs against generalized contract invariants. 
+
+Property-based testing does **not** prove complete SEP-41 correctness. It acts as an additional layer of assurance to catch implementation oversights.
+
+### Covered Properties
+
+The current framework tests the following SEP-41 invariants:
+1. **Transfer Conservation**: Valid transfers correctly subtract from the sender and add to the receiver (`sender_after = sender_before - amount`, `receiver_after = receiver_before + amount`).
+2. **Failed-Operation Stability**: Invalid operations (such as transfers exceeding balance or unapproved delegated spending) must fail natively and leave the ledger state entirely untouched (`state_after = state_before`).
+3. **Allowance Consistency**: Delegated transfers properly subtract from both the sender's balance and the spender's allowance, while ensuring that the allowance expiration ledger behavior remains strictly enforced.
+
+### Test Architecture
+
+* **Constrained Generation**: Test cases are systematically constrained to respect valid pre-conditions (e.g., ensuring `amount >= 0` and balances satisfy the transfer request) before testing the invariant.
+* **Determinism**: The `proptest` framework guarantees that generated failure cases remain fully reproducible using the test seeding functionality. No live RPC or external network dependencies are used; everything runs in completely isolated simulated environments.
+* **Execution**: Run property tests naturally alongside the standard suite via `cargo test`.
+
 ## How to add a new fixture
 
 1. Implement the `Fixture` and profile-specific traits (e.g., `Sep41Fixture`) for your custom contract.

@@ -355,3 +355,28 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod property_tests {
+    use super::*;
+    use proptest::test_runner::TestRunner;
+    use conformance_sep41::proptest::*;
+
+    #[test]
+    fn test_broken_transfer_detected_by_proptest() {
+        let mut runner = TestRunner::default();
+        let res = runner.run(&(0i128..=1000), |amount| {
+            check_transfer_conservation(BrokenTransferFixture::new, amount)
+        });
+        assert!(res.is_err(), "Proptest should detect broken transfer conservation");
+    }
+
+    #[test]
+    fn test_broken_allowance_consumption_detected_by_proptest() {
+        let mut runner = TestRunner::default();
+        let res = runner.run(&(0i128..=1000, 0i128..=1000), |(app, tr)| {
+            check_allowance_consistency(BrokenAllowanceConsumptionFixture::new, app, tr)
+        });
+        assert!(res.is_err(), "Proptest should detect broken allowance consistency");
+    }
+}

@@ -206,3 +206,32 @@ mod test {
         }
     }
 }
+
+#[cfg(test)]
+mod property_tests {
+    use super::*;
+    use proptest::prelude::*;
+    use conformance_sep41::proptest::*;
+
+    proptest! {
+        #[test]
+        fn prop_sep41_transfer_conservation(amount in 0i128..=1000) {
+            check_transfer_conservation(ValidSep41Fixture::new, amount).unwrap();
+        }
+
+        #[test]
+        fn prop_sep41_transfer_insufficient_balance(extra in 1i128..=1000) {
+            check_transfer_insufficient_balance(ValidSep41Fixture::new, extra).unwrap();
+        }
+
+        #[test]
+        fn prop_sep41_allowance_consistency(approve_amount in 0i128..=1000, transfer_amount in 0i128..=1000) {
+            let _ = check_allowance_consistency(ValidSep41Fixture::new, approve_amount, transfer_amount);
+        }
+
+        #[test]
+        fn prop_sep41_allowance_insufficient(approve_amount in 0i128..=1000, extra in 1i128..=1000) {
+            let _ = check_allowance_insufficient(ValidSep41Fixture::new, approve_amount, extra);
+        }
+    }
+}

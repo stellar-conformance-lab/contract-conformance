@@ -15,6 +15,8 @@ pub trait Sep41Fixture: conformance_core::fixture::Fixture {
     fn expected_initial_balance(&self) -> i128;
 }
 
+pub mod proptest;
+
 pub mod event_helpers {
     use soroban_sdk::{Env, Map, Symbol, TryFromVal, Val, Vec as SorobanVec};
 
