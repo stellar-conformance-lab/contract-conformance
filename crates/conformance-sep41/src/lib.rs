@@ -4,6 +4,7 @@ use conformance_core::scenario::Scenario;
 use conformance_core::result::{TestResult, Status};
 use soroban_sdk::{token::Client as TokenClient, Address, Env};
 use soroban_sdk::testutils::Ledger;
+use soroban_sdk::IntoVal;
 
 pub trait Sep41Fixture: conformance_core::fixture::Fixture {
     fn token_contract_id(&self) -> &Address;
@@ -165,7 +166,15 @@ impl<F: Sep41Fixture> Scenario<F> for TransferSuccessScenario {
             return TestResult { test_id: self.id(), description: self.description(), status: Status::Error, expected_behavior: "Fixture must have enough balance", observed_behavior: "Insufficient balance to perform test" };
         }
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "transfer",
+                args: (alice, bob, &transfer_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.transfer(alice, bob, &transfer_amount);
 
         let final_alice = client.balance(alice);
@@ -189,7 +198,15 @@ impl<F: Sep41Fixture> Scenario<F> for TransferEventScenario {
         let bob = fixture.test_account_2();
         let transfer_amount = 10_i128;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "transfer",
+                args: (alice, bob, &transfer_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.transfer(alice, bob, &transfer_amount);
 
         let events = env.events().all();
@@ -237,7 +254,15 @@ impl<F: Sep41Fixture> Scenario<F> for TransferInsufficientBalanceScenario {
         let initial_bob = client.balance(bob);
         let transfer_amount = initial_alice + 1;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "transfer",
+                args: (alice, bob, &transfer_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         let result = client.try_transfer(alice, bob, &transfer_amount);
 
         if result.is_ok() {
@@ -265,9 +290,19 @@ impl<F: Sep41Fixture> Scenario<F> for TransferAuthorizationScenario {
         let bob = fixture.test_account_2();
         let transfer_amount = 10_i128;
 
+        let initial_alice = client.balance(alice);
+        let initial_bob = client.balance(bob);
+        
         let result = client.try_transfer(alice, bob, &transfer_amount);
         if result.is_ok() {
             return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Transfer requires Soroban authorization from sender", observed_behavior: "Transfer succeeded without authorization" };
+        }
+
+        let final_alice = client.balance(alice);
+        let final_bob = client.balance(bob);
+        
+        if final_alice != initial_alice || final_bob != initial_bob {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Balances unchanged on failed auth", observed_behavior: "Balances mutated without authorization" };
         }
 
         TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Transfer requires authorization", observed_behavior: "Transfer failed when unauthorized" }
@@ -285,7 +320,15 @@ impl<F: Sep41Fixture> Scenario<F> for TransferNegativeAmountScenario {
         let initial_alice = client.balance(alice);
         let transfer_amount = -10_i128;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "transfer",
+                args: (alice, bob, &transfer_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         let result = client.try_transfer(alice, bob, &transfer_amount);
 
         if result.is_ok() {
@@ -319,9 +362,17 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceQueryScenario {
             return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Initial allowance is zero", observed_behavior: "Initial allowance is non-zero" };
         }
 
-        env.mock_all_auths();
         let amount = 100_i128;
         let expiration = env.ledger().sequence() + 100;
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice.clone(), carol.clone(), amount, expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &amount, &expiration);
         
         let final_allowance = client.allowance(alice, carol);
@@ -344,7 +395,15 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceApproveScenario {
         let amount = 150_i128;
         let expiration = env.ledger().sequence() + 100;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice.clone(), carol.clone(), amount, expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         let result = client.try_approve(alice, carol, &amount, &expiration);
 
         if result.is_err() {
@@ -376,8 +435,25 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceTransferFromScenario {
         let transfer_amount = 30_i128;
         let expiration = env.ledger().sequence() + 100;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &amount, &expiration);
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: carol,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "transfer_from",
+                args: (carol, alice, bob, &transfer_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.transfer_from(carol, alice, bob, &transfer_amount);
 
         let final_alice = client.balance(alice);
@@ -415,7 +491,15 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceExpirationScenario {
         let amount = 100_i128;
         let expiration = env.ledger().sequence() + 10;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &amount, &expiration);
 
         env.ledger().with_mut(|li| li.sequence_number = expiration);
@@ -447,10 +531,27 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceInsufficientScenario {
         let initial_allowance = 50_i128;
         let expiration = env.ledger().sequence() + 100;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &initial_allowance, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &initial_allowance, &expiration);
         
         let request_amount = initial_allowance + 1;
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: carol,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "transfer_from",
+                args: (carol, alice, bob, &request_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         let result = client.try_transfer_from(carol, alice, bob, &request_amount);
 
         let final_alice = client.balance(alice);
@@ -479,15 +580,31 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceUnauthorizedApproveScenario {
         let carol = fixture.test_account_3();
         let amount = 100_i128;
         let expiration = env.ledger().sequence() + 100;
+        
+        // Setup initial allowance
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
+        client.approve(alice, carol, &amount, &expiration);
+        
+        // Clear mock auths
+        env.mock_auths(&[]);
 
-        let result = client.try_approve(alice, carol, &amount, &expiration);
+        let new_amount = 200_i128;
+        let result = client.try_approve(alice, carol, &new_amount, &expiration);
 
         if result.is_ok() {
             return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Approve requires from authorization", observed_behavior: "Approve succeeded without authorization" };
         }
 
         let final_allowance = client.allowance(alice, carol);
-        if final_allowance != 0 {
+        if final_allowance != amount {
             return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Allowance unchanged after failed auth", observed_behavior: "Allowance mutated without authorization" };
         }
 
@@ -505,11 +622,39 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceUnauthorizedTransferFromScenario 
         let bob = fixture.test_account_2();
         let carol = fixture.test_account_3();
         let amount = 50_i128;
+        let expiration = env.ledger().sequence() + 100;
         
+        // Setup initial allowance
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
+        client.approve(alice, carol, &amount, &expiration);
+        
+        // Clear mock auths
+        env.mock_auths(&[]);
+
+        let initial_alice = client.balance(alice);
+        let initial_bob = client.balance(bob);
+        let initial_allowance = client.allowance(alice, carol);
+
         let result = client.try_transfer_from(carol, alice, bob, &amount);
 
         if result.is_ok() {
             return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "transfer_from requires spender authorization", observed_behavior: "transfer_from succeeded without authorization" };
+        }
+        
+        let final_alice = client.balance(alice);
+        let final_bob = client.balance(bob);
+        let final_allowance = client.allowance(alice, carol);
+
+        if final_alice != initial_alice || final_bob != initial_bob || final_allowance != initial_allowance {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "State unchanged on failed auth", observed_behavior: "State mutated without authorization" };
         }
 
         TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Unauthorized transfer_from fails cleanly", observed_behavior: "Failed cleanly without authorization" }
@@ -527,7 +672,15 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceEventScenario {
         let amount = 10_i128;
         let expiration = env.ledger().sequence() + 100;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &amount, &expiration);
 
         let events = env.events().all();
@@ -574,11 +727,28 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceZeroRevocationScenario {
         let amount = 100_i128;
         let expiration = env.ledger().sequence() + 100;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &amount, &expiration);
         let initial_allowance = client.allowance(alice, carol);
         
         let zero_amount = 0_i128;
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &zero_amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &zero_amount, &expiration);
         let revoked_allowance = client.allowance(alice, carol);
 
@@ -603,8 +773,25 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceOverwriteScenario {
         let amount2 = 40_i128;
         let exp2 = env.ledger().sequence() + 100;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &amount1, &exp1).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &amount1, &exp1);
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &amount2, &exp2).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &amount2, &exp2);
         
         let final_allowance = client.allowance(alice, carol);
@@ -638,7 +825,15 @@ impl<F: Sep41Fixture> Scenario<F> for BurnSuccessScenario {
             return TestResult { test_id: self.id(), description: self.description(), status: Status::Error, expected_behavior: "Alice has enough balance", observed_behavior: "Insufficient balance for setup" };
         }
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "burn",
+                args: (alice, &burn_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.burn(alice, &burn_amount);
 
         let final_alice = client.balance(alice);
@@ -689,8 +884,25 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromSuccessScenario {
         let burn_amount = 30_i128;
         let expiration = env.ledger().sequence() + 100;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &amount, &expiration);
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: carol,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "burn_from",
+                args: (carol, alice, &burn_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.burn_from(carol, alice, &burn_amount);
 
         let final_alice = client.balance(alice);
@@ -722,7 +934,24 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromAuthorizationScenario {
         let alice = fixture.test_account_1();
         let carol = fixture.test_account_3();
         let burn_amount = 30_i128;
+        let amount = 100_i128;
+        let expiration = env.ledger().sequence() + 100;
+
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
+        client.approve(alice, carol, &amount, &expiration);
+        
+        env.mock_auths(&[]);
+
         let initial_alice = client.balance(alice);
+        let initial_allowance = client.allowance(alice, carol);
 
         let result = client.try_burn_from(carol, alice, &burn_amount);
 
@@ -731,8 +960,10 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromAuthorizationScenario {
         }
 
         let final_alice = client.balance(alice);
-        if final_alice != initial_alice {
-            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Balance unchanged", observed_behavior: "Balance mutated" };
+        let final_allowance = client.allowance(alice, carol);
+        
+        if final_alice != initial_alice || final_allowance != initial_allowance {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "State unchanged on failed auth", observed_behavior: "State mutated without authorization" };
         }
 
         TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Unauthorized burn_from fails cleanly", observed_behavior: "Failed cleanly" }
@@ -749,7 +980,15 @@ impl<F: Sep41Fixture> Scenario<F> for BurnInsufficientBalanceScenario {
         let initial_alice = client.balance(alice);
         let burn_amount = initial_alice + 1;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "burn",
+                args: (alice, &burn_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         let result = client.try_burn(alice, &burn_amount);
 
         if result.is_ok() {
@@ -777,10 +1016,27 @@ impl<F: Sep41Fixture> Scenario<F> for BurnFromInsufficientAllowanceScenario {
         let initial_allowance = 50_i128;
         let expiration = env.ledger().sequence() + 100;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &initial_allowance, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.approve(alice, carol, &initial_allowance, &expiration);
         
         let burn_amount = initial_allowance + 1;
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: carol,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "burn_from",
+                args: (carol, alice, &burn_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         let result = client.try_burn_from(carol, alice, &burn_amount);
 
         if result.is_ok() {
@@ -807,7 +1063,15 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
         let alice = fixture.test_account_1();
         let burn_amount = 10_i128;
 
-        env.mock_all_auths();
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "burn",
+                args: (alice, &burn_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
         client.burn(alice, &burn_amount);
 
         let events = env.events().all();
