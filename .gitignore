@@ -7,3 +7,4 @@
 # Developer debug/temporary artifacts
 logs*.txt
 *.patch
+**/test_snapshots/
