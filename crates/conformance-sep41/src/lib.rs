@@ -326,8 +326,11 @@ impl<F: Sep41Fixture> Scenario<F> for TransferEventScenario {
                             soroban_sdk::Address::try_from_val(env, &t2),
                         ) {
                             if sym == transfer_symbol && &from == alice && &to == bob {
-                                if crate::event_helpers::verify_amount_data(env, &data, transfer_amount)
-                                {
+                                if crate::event_helpers::verify_amount_data(
+                                    env,
+                                    &data,
+                                    transfer_amount,
+                                ) {
                                     found = true;
                                     break;
                                 }
@@ -1624,7 +1627,8 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
                             soroban_sdk::Address::try_from_val(env, &t1),
                         ) {
                             if sym == burn_symbol && &from == alice {
-                                if crate::event_helpers::verify_amount_data(env, &data, burn_amount) {
+                                if crate::event_helpers::verify_amount_data(env, &data, burn_amount)
+                                {
                                     found_valid_event = true;
                                     break;
                                 }
