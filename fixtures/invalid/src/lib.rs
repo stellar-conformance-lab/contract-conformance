@@ -4,6 +4,7 @@ use conformance_core::engine::ConformanceEngine;
 use conformance_core::fixture::Fixture;
 use conformance_core::result::Status;
 use conformance_sep41::Sep41Fixture;
+use soroban_sdk::testutils::Address as _;
 use soroban_sdk::{contract, contractimpl, symbol_short, vec, Address, Env, IntoVal, Symbol};
 
 // -----------------------------------------------------------------------------
