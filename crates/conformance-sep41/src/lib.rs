@@ -326,9 +326,7 @@ impl<F: Sep41Fixture> Scenario<F> for TransferEventScenario {
                             && &from == alice
                             && &to == bob
                             && crate::event_helpers::verify_amount_data(
-                                env,
-                                &data,
-                                transfer_amount,
+                                env, &data, transfer_amount,
                             )
                         {
                             found = true;
@@ -1622,9 +1620,7 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
                         if sym == burn_symbol
                             && &from == alice
                             && crate::event_helpers::verify_amount_data(
-                                env,
-                                &data,
-                                burn_amount,
+                                env, &data, burn_amount,
                             )
                         {
                             found_valid_event = true;
