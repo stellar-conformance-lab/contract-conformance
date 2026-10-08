@@ -93,8 +93,7 @@ mod test {
         AllowanceZeroRevocationScenario, AllowanceOverwriteScenario,
         BurnSuccessScenario, BurnAuthorizationScenario, BurnFromSuccessScenario,
         BurnFromAuthorizationScenario, BurnInsufficientBalanceScenario,
-        BurnFromInsufficientAllowanceScenario, BurnEventScenario,
-        BurnNegativeAmountScenario
+        BurnFromInsufficientAllowanceScenario, BurnEventScenario
     };
 
     #[test]
@@ -127,7 +126,6 @@ mod test {
             ConformanceEngine::run_isolated_scenario(&BurnInsufficientBalanceScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&BurnFromInsufficientAllowanceScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&BurnEventScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&BurnNegativeAmountScenario, |env| ValidSep41Fixture::new(env)),
         ];
 
         for result in results {

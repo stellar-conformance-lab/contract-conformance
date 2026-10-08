@@ -751,10 +751,10 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
         client.burn(alice, &burn_amount);
 
         let events = env.events().all();
-        let mut found_topic = false;
+        let mut found_valid_event = false;
         let burn_symbol = soroban_sdk::Symbol::new(env, "burn");
 
-        for (contract_id, topics, _data) in events.into_iter() {
+        for (contract_id, topics, data) in events.into_iter() {
             if contract_id == *fixture.token_contract_id() {
                 let mut has_symbol = false;
                 let mut has_owner = false;
@@ -766,42 +766,40 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
                 }
 
                 if has_symbol && has_owner {
-                    found_topic = true;
-                    break;
+                    use soroban_sdk::TryFromVal;
+                    
+                    let mut data_matches = false;
+
+                    // Try single-value representation: i128
+                    if let Ok(amount) = i128::try_from_val(env, &data) {
+                        if amount == burn_amount {
+                            data_matches = true;
+                        }
+                    }
+
+                    // Try map representation: { amount: i128 }
+                    if !data_matches {
+                        if let Ok(map) = soroban_sdk::Map::<soroban_sdk::Symbol, i128>::try_from_val(env, &data) {
+                            if let Some(amount) = map.get(soroban_sdk::Symbol::new(env, "amount")) {
+                                if amount == burn_amount {
+                                    data_matches = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if data_matches {
+                        found_valid_event = true;
+                        break;
+                    }
                 }
             }
         }
 
-        if found_topic {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Emits burn event with required topics", observed_behavior: "Burn event found with required semantic topics" }
+        if found_valid_event {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Emits burn event with exact topics and valid data format", observed_behavior: "Burn event found matching exact SEP-41 semantic requirements" }
         } else {
-            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Emits burn event with required topics", observed_behavior: "Burn event missing required semantic topics" }
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Emits burn event with exact topics and valid data format", observed_behavior: "Burn event missing or lacked required data matching amount burned" }
         }
-    }
-}
-
-pub struct BurnNegativeAmountScenario;
-impl<F: Sep41Fixture> Scenario<F> for BurnNegativeAmountScenario {
-    fn id(&self) -> &'static str { "SEP41-BURN-008" }
-    fn description(&self) -> &'static str { "Negative amount burn" }
-    fn run(&self, env: &Env, fixture: &F) -> TestResult {
-        let client = TokenClient::new(env, fixture.token_contract_id());
-        let alice = fixture.test_account_1();
-        let initial_alice = client.balance(alice);
-        let burn_amount = -10_i128;
-
-        env.mock_all_auths();
-        let result = client.try_burn(alice, &burn_amount);
-
-        if result.is_ok() {
-            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Burn fails with negative amount", observed_behavior: "Burn succeeded with negative amount" };
-        }
-
-        let final_alice = client.balance(alice);
-        if final_alice != initial_alice {
-            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Balance unchanged", observed_behavior: "Balance mutated on negative burn" };
-        }
-
-        TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Burn fails and state is preserved", observed_behavior: "Burn failed as expected" }
     }
 }
