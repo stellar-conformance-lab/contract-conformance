@@ -1,4 +1,4 @@
-use conformance_core::result::{TestResult, Status as CoreStatus};
+use conformance_core::result::{Status as CoreStatus, TestResult};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -66,9 +66,9 @@ impl ConformanceReport {
         let mut failed = 0;
         let mut errors = 0;
         let mut skipped = 0;
-        
+
         let mut scenarios = Vec::with_capacity(results.len());
-        
+
         for r in results {
             scenarios.push(ScenarioResult::from(r));
             match r.status {
@@ -78,9 +78,9 @@ impl ConformanceReport {
                 CoreStatus::Skipped => skipped += 1,
             }
         }
-        
+
         let total = passed + failed + errors + skipped;
-        
+
         // Define deterministic overall result
         let overall_status = if errors > 0 {
             Status::Error
@@ -96,19 +96,23 @@ impl ConformanceReport {
             profile: profile.to_string(),
             fixture: fixture.to_string(),
             summary: Summary {
-                total, passed, failed, errors, skipped
+                total,
+                passed,
+                failed,
+                errors,
+                skipped,
             },
             status: overall_status,
             results: scenarios,
         }
     }
-    
+
     pub fn to_human_readable(&self) -> String {
         let mut out = String::new();
         out.push_str("Stellar Contract Conformance Report\n\n");
         out.push_str(&format!("Profile: {}\n", self.profile));
         out.push_str(&format!("Fixture: {}\n\n", self.fixture));
-        
+
         for s in &self.results {
             let status_str = match s.status {
                 Status::Pass => "PASS",
@@ -116,20 +120,23 @@ impl ConformanceReport {
                 Status::Error => "ERROR",
                 Status::Skipped => "SKIP",
             };
-            out.push_str(&format!("{:5}  {:20}  {}\n", status_str, s.test_id, s.description));
+            out.push_str(&format!(
+                "{:5}  {:20}  {}\n",
+                status_str, s.test_id, s.description
+            ));
             if s.status == Status::Fail || s.status == Status::Error {
                 out.push_str(&format!("         Requirement: {}\n", s.expected_behavior));
                 out.push_str(&format!("         Message:     {}\n", s.observed_behavior));
             }
         }
-        
+
         out.push_str("\nSummary:\n");
         out.push_str(&format!("  Total: {}\n", self.summary.total));
         out.push_str(&format!("  Passed: {}\n", self.summary.passed));
         out.push_str(&format!("  Failed: {}\n", self.summary.failed));
         out.push_str(&format!("  Errors: {}\n", self.summary.errors));
         out.push_str(&format!("  Skipped: {}\n\n", self.summary.skipped));
-        
+
         let overall_str = match self.status {
             Status::Pass => "PASS",
             Status::Fail => "FAIL",
@@ -137,10 +144,10 @@ impl ConformanceReport {
             Status::Skipped => "SKIPPED",
         };
         out.push_str(&format!("Overall: {}\n", overall_str));
-        
+
         out
     }
-    
+
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string_pretty(self)
     }
@@ -197,12 +204,10 @@ mod tests {
 
     #[test]
     fn test_overall_status_all_skipped() {
-        let results = vec![
-            dummy_result(CoreStatus::Skipped),
-        ];
+        let results = vec![dummy_result(CoreStatus::Skipped)];
         let report = ConformanceReport::new("SEP-41", "valid", &results);
         assert_eq!(report.status, Status::Skipped);
-        
+
         let empty: Vec<TestResult> = vec![];
         let report_empty = ConformanceReport::new("SEP-41", "valid", &empty);
         assert_eq!(report_empty.status, Status::Skipped);
@@ -226,18 +231,18 @@ mod tests {
                 observed_behavior: "D",
             },
         ];
-        
+
         let report = ConformanceReport::new("PROFILE", "FIXTURE", &results);
-        
+
         // Assert deterministic ordering
         assert_eq!(report.results[0].test_id, "ID-1");
         assert_eq!(report.results[1].test_id, "ID-2");
-        
+
         let json = report.to_json().unwrap();
-        
+
         // Validate round-trip structure
         let deserialized: ConformanceReport = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(report, deserialized);
     }
 
@@ -248,7 +253,7 @@ mod tests {
         // It is the testing harness's job to check `assert_eq!(report.status, Status::Fail)`.
         let results = vec![dummy_result(CoreStatus::Fail)];
         let report = ConformanceReport::new("SEP-41", "invalid-fixture", &results);
-        
+
         // Ensure it doesn't get converted to PASS just because we "expected" it.
         // Report status MUST remain FAIL.
         assert_eq!(report.status, Status::Fail);

@@ -2,8 +2,8 @@
 
 use conformance_core::fixture::Fixture;
 use conformance_sep41::Sep41Fixture;
-use soroban_sdk::{testutils::Address as _, Address, Env};
 use soroban_sdk::token::StellarAssetClient;
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 #[derive(Debug)]
 pub enum ValidFixtureError {
@@ -24,10 +24,10 @@ impl ValidSep41Fixture {
         let alice = Address::generate(env);
         let bob = Address::generate(env);
         let carol = Address::generate(env);
-        
+
         // Use the official Stellar Asset Contract as the deterministic reference implementation under test.
         let token_id = env.register_stellar_asset_contract(admin.clone());
-        
+
         Self {
             admin,
             alice,
@@ -43,12 +43,12 @@ impl Fixture for ValidSep41Fixture {
 
     fn setup(&self, env: &Env) -> Result<(), Self::Error> {
         let sac_client = StellarAssetClient::new(env, &self.token_id);
-        
+
         // Establish a deterministic initial balance for the test account.
         // This simulates whatever internal mechanism a token uses to distribute balances.
         // The conformance engine remains entirely unaware of this internal mint operation.
         sac_client.mint(&self.alice, &self.expected_initial_balance());
-        
+
         Ok(())
     }
 }
@@ -81,51 +81,105 @@ mod test {
     use conformance_core::engine::ConformanceEngine;
     use conformance_core::result::Status;
     use conformance_sep41::{
-        MetaNameScenario, MetaSymbolScenario, MetaDecimalsScenario,
-        BalInitialScenario, BalZeroScenario,
-        TransferSuccessScenario, TransferEventScenario, 
-        TransferInsufficientBalanceScenario, TransferAuthorizationScenario,
-        TransferNegativeAmountScenario,
-        AllowanceQueryScenario, AllowanceApproveScenario,
-        AllowanceTransferFromScenario, AllowanceExpirationScenario,
-        AllowanceInsufficientScenario, AllowanceUnauthorizedApproveScenario,
-        AllowanceUnauthorizedTransferFromScenario, AllowanceEventScenario,
-        AllowanceZeroRevocationScenario, AllowanceOverwriteScenario,
-        BurnSuccessScenario, BurnAuthorizationScenario, BurnFromSuccessScenario,
-        BurnFromAuthorizationScenario, BurnInsufficientBalanceScenario,
-        BurnFromInsufficientAllowanceScenario, BurnEventScenario
+        AllowanceApproveScenario, AllowanceEventScenario, AllowanceExpirationScenario,
+        AllowanceInsufficientScenario, AllowanceOverwriteScenario, AllowanceQueryScenario,
+        AllowanceTransferFromScenario, AllowanceUnauthorizedApproveScenario,
+        AllowanceUnauthorizedTransferFromScenario, AllowanceZeroRevocationScenario,
+        BalInitialScenario, BalZeroScenario, BurnAuthorizationScenario, BurnEventScenario,
+        BurnFromAuthorizationScenario, BurnFromInsufficientAllowanceScenario,
+        BurnFromSuccessScenario, BurnInsufficientBalanceScenario, BurnSuccessScenario,
+        MetaDecimalsScenario, MetaNameScenario, MetaSymbolScenario, TransferAuthorizationScenario,
+        TransferEventScenario, TransferInsufficientBalanceScenario, TransferNegativeAmountScenario,
+        TransferSuccessScenario,
     };
 
     #[test]
     fn demonstrate_valid_fixture() {
         let results = [
-            ConformanceEngine::run_isolated_scenario(&MetaNameScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&MetaSymbolScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&MetaDecimalsScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&BalInitialScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&BalZeroScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&TransferSuccessScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&TransferEventScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&TransferInsufficientBalanceScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&TransferAuthorizationScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&TransferNegativeAmountScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceQueryScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceApproveScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceTransferFromScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceExpirationScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceInsufficientScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceUnauthorizedApproveScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceUnauthorizedTransferFromScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceEventScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceZeroRevocationScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&AllowanceOverwriteScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&BurnSuccessScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&BurnAuthorizationScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&BurnFromSuccessScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&BurnFromAuthorizationScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&BurnInsufficientBalanceScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&BurnFromInsufficientAllowanceScenario, |env| ValidSep41Fixture::new(env)),
-            ConformanceEngine::run_isolated_scenario(&BurnEventScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&MetaNameScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&MetaSymbolScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&MetaDecimalsScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&BalInitialScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&BalZeroScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&TransferSuccessScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&TransferEventScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&TransferInsufficientBalanceScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&TransferAuthorizationScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&TransferNegativeAmountScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&AllowanceQueryScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&AllowanceApproveScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&AllowanceTransferFromScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&AllowanceExpirationScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&AllowanceInsufficientScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(
+                &AllowanceUnauthorizedApproveScenario,
+                |env| ValidSep41Fixture::new(env),
+            ),
+            ConformanceEngine::run_isolated_scenario(
+                &AllowanceUnauthorizedTransferFromScenario,
+                |env| ValidSep41Fixture::new(env),
+            ),
+            ConformanceEngine::run_isolated_scenario(&AllowanceEventScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&AllowanceZeroRevocationScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&AllowanceOverwriteScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&BurnSuccessScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&BurnAuthorizationScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&BurnFromSuccessScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&BurnFromAuthorizationScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&BurnInsufficientBalanceScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(
+                &BurnFromInsufficientAllowanceScenario,
+                |env| ValidSep41Fixture::new(env),
+            ),
+            ConformanceEngine::run_isolated_scenario(&BurnEventScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
         ];
 
         for result in results {

@@ -106,7 +106,13 @@ impl BrokenAllowanceConsumptionContract {
     pub fn allowance(env: Env, from: Address, spender: Address) -> i128 {
         env.storage().instance().get(&(from, spender)).unwrap_or(0)
     }
-    pub fn approve(env: Env, from: Address, spender: Address, amount: i128, _expiration_ledger: u32) {
+    pub fn approve(
+        env: Env,
+        from: Address,
+        spender: Address,
+        amount: i128,
+        _expiration_ledger: u32,
+    ) {
         from.require_auth();
         env.storage().instance().set(&(from, spender), &amount);
     }
@@ -122,7 +128,10 @@ impl BrokenAllowanceConsumptionContract {
         env.storage().instance().set(&to, &amount);
     }
 }
-impl_fixture!(BrokenAllowanceConsumptionFixture, BrokenAllowanceConsumptionContract);
+impl_fixture!(
+    BrokenAllowanceConsumptionFixture,
+    BrokenAllowanceConsumptionContract
+);
 
 // -----------------------------------------------------------------------------
 // 3. INCORRECT BURN BALANCE BEHAVIOR
@@ -159,17 +168,32 @@ impl BrokenApprovalOverwriteContract {
     pub fn allowance(env: Env, from: Address, spender: Address) -> i128 {
         env.storage().instance().get(&(from, spender)).unwrap_or(0)
     }
-    pub fn approve(env: Env, from: Address, spender: Address, amount: i128, _expiration_ledger: u32) {
+    pub fn approve(
+        env: Env,
+        from: Address,
+        spender: Address,
+        amount: i128,
+        _expiration_ledger: u32,
+    ) {
         from.require_auth();
         // INTENTIONAL VIOLATION: adds to allowance instead of overwriting
-        let current: i128 = env.storage().instance().get(&(from.clone(), spender.clone())).unwrap_or(0);
-        env.storage().instance().set(&(from, spender), &(current + amount));
+        let current: i128 = env
+            .storage()
+            .instance()
+            .get(&(from.clone(), spender.clone()))
+            .unwrap_or(0);
+        env.storage()
+            .instance()
+            .set(&(from, spender), &(current + amount));
     }
     pub fn mint(env: Env, to: Address, amount: i128) {
         env.storage().instance().set(&to, &amount);
     }
 }
-impl_fixture!(BrokenApprovalOverwriteFixture, BrokenApprovalOverwriteContract);
+impl_fixture!(
+    BrokenApprovalOverwriteFixture,
+    BrokenApprovalOverwriteContract
+);
 
 // -----------------------------------------------------------------------------
 // 5. INCORRECT EVENT DATA
@@ -188,13 +212,11 @@ impl BrokenEventDataContract {
         let to_bal: i128 = env.storage().instance().get(&to).unwrap_or(0);
         env.storage().instance().set(&from, &(from_bal - amount));
         env.storage().instance().set(&to, &(to_bal + amount));
-        
+
         // INTENTIONAL VIOLATION: emits wrong amount!
         let wrong_amount = amount + 1;
-        env.events().publish(
-            (Symbol::new(&env, "transfer"), from, to),
-            wrong_amount
-        );
+        env.events()
+            .publish((Symbol::new(&env, "transfer"), from, to), wrong_amount);
     }
     pub fn mint(env: Env, to: Address, amount: i128) {
         env.storage().instance().set(&to, &amount);
@@ -233,50 +255,88 @@ impl_fixture!(BrokenAuthorizationFixture, BrokenAuthorizationContract);
 mod tests {
     use super::*;
     use conformance_sep41::{
-        TransferSuccessScenario, AllowanceTransferFromScenario,
-        BurnSuccessScenario, AllowanceOverwriteScenario,
-        TransferEventScenario, TransferAuthorizationScenario
+        AllowanceOverwriteScenario, AllowanceTransferFromScenario, BurnSuccessScenario,
+        TransferAuthorizationScenario, TransferEventScenario, TransferSuccessScenario,
     };
 
     #[test]
     fn test_broken_transfer_balance() {
         // Expected violation: Transfer balance mismatch -> Fail
-        let result = ConformanceEngine::run_isolated_scenario(&TransferSuccessScenario, |env| BrokenTransferFixture::new(env));
-        assert_eq!(result.status, Status::Fail, "Expected framework to detect broken transfer balance");
+        let result = ConformanceEngine::run_isolated_scenario(&TransferSuccessScenario, |env| {
+            BrokenTransferFixture::new(env)
+        });
+        assert_eq!(
+            result.status,
+            Status::Fail,
+            "Expected framework to detect broken transfer balance"
+        );
     }
 
     #[test]
     fn test_broken_allowance_consumption() {
         // Expected violation: transfer_from doesn't reduce allowance -> Fail
-        let result = ConformanceEngine::run_isolated_scenario(&AllowanceTransferFromScenario, |env| BrokenAllowanceConsumptionFixture::new(env));
-        assert_eq!(result.status, Status::Fail, "Expected framework to detect broken allowance consumption");
+        let result =
+            ConformanceEngine::run_isolated_scenario(&AllowanceTransferFromScenario, |env| {
+                BrokenAllowanceConsumptionFixture::new(env)
+            });
+        assert_eq!(
+            result.status,
+            Status::Fail,
+            "Expected framework to detect broken allowance consumption"
+        );
     }
 
     #[test]
     fn test_broken_burn_balance() {
         // Expected violation: burn doesn't reduce balance -> Fail
-        let result = ConformanceEngine::run_isolated_scenario(&BurnSuccessScenario, |env| BrokenBurnFixture::new(env));
-        assert_eq!(result.status, Status::Fail, "Expected framework to detect broken burn balance");
+        let result = ConformanceEngine::run_isolated_scenario(&BurnSuccessScenario, |env| {
+            BrokenBurnFixture::new(env)
+        });
+        assert_eq!(
+            result.status,
+            Status::Fail,
+            "Expected framework to detect broken burn balance"
+        );
     }
 
     #[test]
     fn test_broken_approval_overwrite() {
         // Expected violation: approve adds instead of overwrites -> Fail
-        let result = ConformanceEngine::run_isolated_scenario(&AllowanceOverwriteScenario, |env| BrokenApprovalOverwriteFixture::new(env));
-        assert_eq!(result.status, Status::Fail, "Expected framework to detect broken approval overwrite");
+        let result = ConformanceEngine::run_isolated_scenario(&AllowanceOverwriteScenario, |env| {
+            BrokenApprovalOverwriteFixture::new(env)
+        });
+        assert_eq!(
+            result.status,
+            Status::Fail,
+            "Expected framework to detect broken approval overwrite"
+        );
     }
 
     #[test]
     fn test_broken_event_data() {
         // Expected violation: transfer event emits wrong amount -> Fail
-        let result = ConformanceEngine::run_isolated_scenario(&TransferEventScenario, |env| BrokenEventDataFixture::new(env));
-        assert_eq!(result.status, Status::Fail, "Expected framework to detect broken event data");
+        let result = ConformanceEngine::run_isolated_scenario(&TransferEventScenario, |env| {
+            BrokenEventDataFixture::new(env)
+        });
+        assert_eq!(
+            result.status,
+            Status::Fail,
+            "Expected framework to detect broken event data"
+        );
     }
 
     #[test]
     fn test_broken_authorization() {
         // Expected violation: transfer succeeds without authorization -> Fail
-        let result = ConformanceEngine::run_isolated_scenario(&TransferAuthorizationScenario, |env| BrokenAuthorizationFixture::new(env));
-        assert_eq!(result.status, Status::Fail, "Expected framework to detect broken authorization");
+        let result =
+            ConformanceEngine::run_isolated_scenario(&TransferAuthorizationScenario, |env| {
+                BrokenAuthorizationFixture::new(env)
+            });
+        assert_eq!(
+            result.status,
+            Status::Fail,
+            "Expected framework to detect broken authorization"
+        );
     }
 }
+

@@ -28,8 +28,8 @@ pub mod fixture {
 }
 
 pub mod scenario {
-    use soroban_sdk::Env;
     use crate::result::TestResult;
+    use soroban_sdk::Env;
     pub trait Scenario<F> {
         fn id(&self) -> &'static str;
         fn description(&self) -> &'static str;
@@ -38,10 +38,10 @@ pub mod scenario {
 }
 
 pub mod engine {
-    use soroban_sdk::Env;
     use crate::fixture::Fixture;
+    use crate::result::{Status, TestResult};
     use crate::scenario::Scenario;
-    use crate::result::{TestResult, Status};
+    use soroban_sdk::Env;
 
     pub struct ConformanceEngine;
 
@@ -61,7 +61,7 @@ pub mod engine {
             // Enforce isolation by creating a fresh Env for this scenario run.
             // Requires the `testutils` feature in soroban-sdk.
             let env = Env::default();
-            
+
             // The environment is prepared, so we can now construct the fixture which
             // likely depends on this specific Env instance (e.g., for Address types).
             let fixture = fixture_factory(&env);
