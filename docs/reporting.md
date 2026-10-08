@@ -1,98 +1,105 @@
 # Reporting Model
 
-The reporting model defines how conformance results are presented. It must support both developers reading test output locally and automated systems (like CI/CD pipelines or GitHub Actions) consuming the results programmatically.
+The reporting model defines how conformance results are presented, explicitly isolating reporting logic from core conformance assertions. It produces deterministic JSON and human-readable text representations natively from an execution run.
 
-## Human-Readable Output
+## Result Statuses
 
-When run via a CLI or test runner, the engine should produce a concise, easy-to-read summary of the conformance status. 
+A scenario result has one of the following explicitly defined statuses:
+
+* **PASS**: The contract was evaluated and completely fulfilled the standard requirement.
+* **FAIL**: The contract was evaluated but violated the standard behavior. This is an actual conformance failure (e.g. incorrect balance state, wrong event emitted).
+* **ERROR**: An infrastructure, test harness, or fixture-setup error prevented the scenario from properly evaluating the contract. This is distinct from a conformance failure.
+* **SKIPPED**: The scenario could not or was not evaluated.
+
+**Important Note for Negative Fixtures:** A deliberately broken test fixture might result in a `FAIL`. Within the reporting model, this is still reported as a `FAIL`. It is the job of the *testing harness* (the caller) to intercept the `FAIL` and recognize it as an expected outcome. The report natively documents reality, without implicitly remapping statuses.
+
+## Scenario Result Structure
+
+Each evaluated scenario emits a `ScenarioResult` object capturing its identity and outcome:
+
+* `test_id`: Stable identifier (e.g., `SEP41-TRANSFER-001`).
+* `description`: Short title of the evaluated capability.
+* `status`: `PASS`, `FAIL`, `ERROR`, or `SKIPPED`.
+* `expected_behavior`: Describes the core requirement being validated.
+* `observed_behavior`: Provides details on the observed failure when `status` is `FAIL` or `ERROR`.
+
+## Aggregate Report
+
+A full conformance execution run produces a `ConformanceReport` capturing all scenario outcomes, categorized functionally by standard and implementation fixture.
+
+* `profile`: Standard profile executed (e.g. "SEP-41").
+* `fixture`: The fixture implementing the test logic.
+* `summary`: Contains counts for total, passed, failed, errors, and skipped scenarios.
+* `status`: The deterministic overall status derived from scenario results.
+* `results`: An array of sequentially ordered `ScenarioResult` items.
+
+### Summary Counts
+
+```text
+total = passed + failed + errors + skipped
+```
+
+### Overall-Status Semantics
+
+The `ConformanceReport.status` evaluates deterministically:
+
+1. If any scenario is `ERROR` -> Overall is **ERROR**.
+2. If any scenario is `FAIL` -> Overall is **FAIL**.
+3. If total scenarios evaluated == 0 or all are `SKIPPED` -> Overall is **SKIPPED**.
+4. Otherwise -> Overall is **PASS**.
+
+## Formats
+
+### Machine-Readable (JSON)
+
+The core `conformance-report` crate supports generating stable JSON formatted strings mapping directly to the `ConformanceReport` struct via `serde` serialization. 
 
 Example:
 
-```text
-Stellar Contract Conformance
-Profile: SEP-41
-Version: 0.5.2
-
-Metadata
-  PASS  SEP41-META-001  Token name
-  PASS  SEP41-META-002  Token symbol
-
-Balance
-  PASS  SEP41-BAL-001   Initial balance
-
-Transfer
-  PASS  SEP41-TRANSFER-001  Successful transfer
-  FAIL  SEP41-TRANSFER-002  Zero-value transfer
-  PASS  SEP41-TRANSFER-003  Insufficient balance
-
-Allowance
-  PASS  SEP41-ALLOWANCE-001  Approve allowance
-
-Authorization
-  FAIL  SEP41-AUTH-001  Unauthorized transfer
-
---------------------------------
-6 passed
-2 failed
-0 errors
-
-STATUS: NON-CONFORMANT
-```
-
-## Machine-Readable Output
-
-For automation, the engine will output a structured JSON report. This schema must be stable and provide comprehensive metadata.
-
-### Conceptual JSON Structure
-
 ```json
 {
+  "profile": "SEP-41",
+  "fixture": "valid",
+  "status": "FAIL",
   "summary": {
-    "profile": "SEP-41",
-    "version": "0.5.2",
-    "status": "NON-CONFORMANT",
-    "passed": 6,
-    "failed": 2,
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
     "errors": 0,
-    "skipped": 0,
-    "execution_time_ms": 142
+    "skipped": 0
   },
   "results": [
     {
       "test_id": "SEP41-TRANSFER-001",
       "description": "Successful transfer updates balances correctly",
-      "status": "PASS",
-      "expected_behavior": "Sender balance decreases by amount, receiver balance increases by amount",
-      "observed_behavior": "Balances updated as expected",
-      "failure_info": null,
-      "execution_metadata": {
-        "cpu_instructions": 45000,
-        "mem_bytes": 1024
-      }
-    },
-    {
-      "test_id": "SEP41-TRANSFER-002",
-      "description": "Zero-value transfer",
       "status": "FAIL",
-      "expected_behavior": "Transaction succeeds with no balance changes",
-      "observed_behavior": "Transaction panicked with 'Invalid amount'",
-      "failure_info": {
-        "reason": "Contract rejected a 0-amount transfer which is permitted by SEP-41",
-        "trace": "..."
-      },
-      "execution_metadata": {
-        "cpu_instructions": 12000,
-        "mem_bytes": 512
-      }
+      "expected_behavior": "Sender balance decreases by amount, receiver balance increases by amount",
+      "observed_behavior": "Balances mutated without authorization"
     }
   ]
 }
 ```
 
-### Key Elements
-- **Profile and Version:** Exactly identifies the standard being tested.
-- **Test ID:** The stable identifier (e.g., `SEP41-TRANSFER-001`).
-- **Status:** `PASS`, `FAIL`, `ERROR`, or `SKIPPED`.
-- **Failure Info:** If a test fails, this provides detailed context, trace, or differences between expected and actual state, preventing developers from having to blindly guess what went wrong. 
+### Human-Readable (Text)
 
-This model ensures the core engine does not need to be rewritten when adding a CLI tool or GitHub Action in the future.
+Example Output:
+
+```text
+Stellar Contract Conformance Report
+
+Profile: SEP-41
+Fixture: valid
+
+FAIL   SEP41-TRANSFER-001    Successful transfer updates balances correctly
+         Requirement: Sender balance decreases by amount, receiver balance increases by amount
+         Message:     Balances mutated without authorization
+
+Summary:
+  Total: 1
+  Passed: 0
+  Failed: 1
+  Errors: 0
+  Skipped: 0
+
+Overall: FAIL
+```
