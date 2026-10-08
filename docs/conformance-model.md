@@ -60,3 +60,19 @@ Examples:
 - `SEP41-TRANSFER-001`
 - `SEP41-ALLOWANCE-001`
 - `SEP41-AUTH-001`
+
+## Specification Traceability
+
+When evaluating failures or extending the suite, contributors must maintain clear traceability between the formal specification and the framework's logic.
+
+The architectural mapping follows a strict lineage:
+
+**Specification Requirement** (e.g., SEP-41 v0.5.2 text)
+↓
+**Conformance Scenario** (e.g., `TransferSuccessScenario` inside `conformance-sep41`)
+↓
+**Assertion** (e.g., Verify sender balance strictly decreased by transfer amount)
+↓
+**Expected Result** (e.g., `TestResult` yielding `Status::Pass` upon verification or `Status::Fail` with a specific `observed_behavior` message)
+
+We **DO NOT** invent phantom requirements or unmentioned edge-cases simply to inflate testing coverage. Every scenario maps directly to a mandated side-effect, state transition, or limitation directly imposed by the specified standard text.
