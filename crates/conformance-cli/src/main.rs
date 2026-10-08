@@ -5,7 +5,7 @@ use conformance_sep41::*;
 use fixture_valid::ValidSep41Fixture;
 use std::process::exit;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(name = "stellar-conform", version)]
 #[command(about = "Stellar Contract Conformance CLI", long_about = None)]
 pub struct Cli {
@@ -13,7 +13,7 @@ pub struct Cli {
     pub command: Commands,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Run conformance tests
     Test {
