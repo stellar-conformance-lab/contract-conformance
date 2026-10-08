@@ -756,16 +756,20 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
 
         for (contract_id, topics, data) in events.into_iter() {
             if contract_id == *fixture.token_contract_id() {
-                let mut has_symbol = false;
-                let mut has_owner = false;
+                let mut is_burn = false;
                 
-                for topic in topics.into_iter() {
-                    let val = topic.to_val();
-                    if val == burn_symbol.to_val() { has_symbol = true; }
-                    if val == alice.to_val() { has_owner = true; }
+                if topics.len() >= 2 {
+                    let mut iter = topics.into_iter();
+                    let t0 = iter.next();
+                    let t1 = iter.next();
+                    if let (Some(t0), Some(t1)) = (t0, t1) {
+                        if t0.to_val() == burn_symbol.to_val() && t1.to_val() == alice.to_val() {
+                            is_burn = true;
+                        }
+                    }
                 }
 
-                if has_symbol && has_owner {
+                if is_burn {
                     use soroban_sdk::TryFromVal;
                     
                     let mut data_matches = false;
