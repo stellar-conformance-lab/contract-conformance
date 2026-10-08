@@ -559,3 +559,249 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceOverwriteScenario {
         }
     }
 }
+
+// -----------------------------------------------------------------------------
+// BURN CONFORMANCE
+// -----------------------------------------------------------------------------
+
+pub struct BurnSuccessScenario;
+impl<F: Sep41Fixture> Scenario<F> for BurnSuccessScenario {
+    fn id(&self) -> &'static str { "SEP41-BURN-001" }
+    fn description(&self) -> &'static str { "Direct burn" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let initial_alice = client.balance(alice);
+        let burn_amount = 50_i128;
+
+        if initial_alice < burn_amount {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Error, expected_behavior: "Alice has enough balance", observed_behavior: "Insufficient balance for setup" };
+        }
+
+        env.mock_all_auths();
+        client.burn(alice, &burn_amount);
+
+        let final_alice = client.balance(alice);
+
+        if final_alice == initial_alice - burn_amount {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Balance decreases by burn amount", observed_behavior: "Balance decreased correctly" }
+        } else {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Balance decreases by burn amount", observed_behavior: "Balance did not decrease correctly" }
+        }
+    }
+}
+
+pub struct BurnAuthorizationScenario;
+impl<F: Sep41Fixture> Scenario<F> for BurnAuthorizationScenario {
+    fn id(&self) -> &'static str { "SEP41-BURN-002" }
+    fn description(&self) -> &'static str { "Burn authorization" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let initial_alice = client.balance(alice);
+        let burn_amount = 10_i128;
+
+        let result = client.try_burn(alice, &burn_amount);
+
+        if result.is_ok() {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Burn requires from authorization", observed_behavior: "Burn succeeded without authorization" };
+        }
+
+        let final_alice = client.balance(alice);
+        if final_alice != initial_alice {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "State remains unchanged after failed auth", observed_behavior: "Balance mutated despite failed auth" };
+        }
+
+        TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Burn fails cleanly without authorization", observed_behavior: "Failed cleanly" }
+    }
+}
+
+pub struct BurnFromSuccessScenario;
+impl<F: Sep41Fixture> Scenario<F> for BurnFromSuccessScenario {
+    fn id(&self) -> &'static str { "SEP41-BURN-003" }
+    fn description(&self) -> &'static str { "burn_from behavior" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let carol = fixture.test_account_3();
+        let initial_alice = client.balance(alice);
+        let amount = 100_i128;
+        let burn_amount = 30_i128;
+        let expiration = env.ledger().sequence() + 100;
+
+        env.mock_all_auths();
+        client.approve(alice, carol, &amount, &expiration);
+        client.burn_from(carol, alice, &burn_amount);
+
+        let final_alice = client.balance(alice);
+        let final_allowance = client.allowance(alice, carol);
+        
+        env.ledger().with_mut(|li| li.sequence_number = expiration);
+        let at_exp_allowance = client.allowance(alice, carol);
+
+        env.ledger().with_mut(|li| li.sequence_number = expiration + 1);
+        let expired_allowance = client.allowance(alice, carol);
+
+        if final_alice == initial_alice - burn_amount &&
+           final_allowance == amount - burn_amount &&
+           at_exp_allowance == amount - burn_amount &&
+           expired_allowance == 0 {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "burn_from decreases balance and allowance, preserves expiration", observed_behavior: "Delegated burn executed accurately" }
+        } else {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "burn_from decreases balance and allowance, preserves expiration", observed_behavior: "State mutations incorrect" }
+        }
+    }
+}
+
+pub struct BurnFromAuthorizationScenario;
+impl<F: Sep41Fixture> Scenario<F> for BurnFromAuthorizationScenario {
+    fn id(&self) -> &'static str { "SEP41-BURN-004" }
+    fn description(&self) -> &'static str { "burn_from authorization" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let carol = fixture.test_account_3();
+        let burn_amount = 30_i128;
+        let initial_alice = client.balance(alice);
+
+        let result = client.try_burn_from(carol, alice, &burn_amount);
+
+        if result.is_ok() {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "burn_from requires spender auth", observed_behavior: "burn_from succeeded without auth" };
+        }
+
+        let final_alice = client.balance(alice);
+        if final_alice != initial_alice {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Balance unchanged", observed_behavior: "Balance mutated" };
+        }
+
+        TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Unauthorized burn_from fails cleanly", observed_behavior: "Failed cleanly" }
+    }
+}
+
+pub struct BurnInsufficientBalanceScenario;
+impl<F: Sep41Fixture> Scenario<F> for BurnInsufficientBalanceScenario {
+    fn id(&self) -> &'static str { "SEP41-BURN-005" }
+    fn description(&self) -> &'static str { "Insufficient balance" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let initial_alice = client.balance(alice);
+        let burn_amount = initial_alice + 1;
+
+        env.mock_all_auths();
+        let result = client.try_burn(alice, &burn_amount);
+
+        if result.is_ok() {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Burn fails when balance is insufficient", observed_behavior: "Burn succeeded unexpectedly" };
+        }
+
+        let final_alice = client.balance(alice);
+        if final_alice != initial_alice {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Balance unchanged after failure", observed_behavior: "Balance mutated despite failed burn" };
+        }
+
+        TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Burn fails cleanly on insufficient balance", observed_behavior: "Burn rejected correctly" }
+    }
+}
+
+pub struct BurnFromInsufficientAllowanceScenario;
+impl<F: Sep41Fixture> Scenario<F> for BurnFromInsufficientAllowanceScenario {
+    fn id(&self) -> &'static str { "SEP41-BURN-006" }
+    fn description(&self) -> &'static str { "Insufficient allowance" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let carol = fixture.test_account_3();
+        let initial_alice = client.balance(alice);
+        let initial_allowance = 50_i128;
+        let expiration = env.ledger().sequence() + 100;
+
+        env.mock_all_auths();
+        client.approve(alice, carol, &initial_allowance, &expiration);
+        
+        let burn_amount = initial_allowance + 1;
+        let result = client.try_burn_from(carol, alice, &burn_amount);
+
+        if result.is_ok() {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "burn_from fails on insufficient allowance", observed_behavior: "burn_from succeeded unexpectedly" };
+        }
+
+        let final_alice = client.balance(alice);
+        let final_allowance = client.allowance(alice, carol);
+
+        if final_alice != initial_alice || final_allowance != initial_allowance {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "State unchanged on failure", observed_behavior: "State mutated despite failed burn_from" };
+        }
+
+        TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "burn_from fails cleanly without mutating state", observed_behavior: "Delegated burn rejected correctly" }
+    }
+}
+
+pub struct BurnEventScenario;
+impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
+    fn id(&self) -> &'static str { "SEP41-BURN-007" }
+    fn description(&self) -> &'static str { "Burn event verification" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let burn_amount = 10_i128;
+
+        env.mock_all_auths();
+        client.burn(alice, &burn_amount);
+
+        let events = env.events().all();
+        let mut found_topic = false;
+        let burn_symbol = soroban_sdk::Symbol::new(env, "burn");
+
+        for (contract_id, topics, _data) in events.into_iter() {
+            if contract_id == *fixture.token_contract_id() {
+                let mut has_symbol = false;
+                let mut has_owner = false;
+                
+                for topic in topics.into_iter() {
+                    let val = topic.to_val();
+                    if val == burn_symbol.to_val() { has_symbol = true; }
+                    if val == alice.to_val() { has_owner = true; }
+                }
+
+                if has_symbol && has_owner {
+                    found_topic = true;
+                    break;
+                }
+            }
+        }
+
+        if found_topic {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Emits burn event with required topics", observed_behavior: "Burn event found with required semantic topics" }
+        } else {
+            TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Emits burn event with required topics", observed_behavior: "Burn event missing required semantic topics" }
+        }
+    }
+}
+
+pub struct BurnNegativeAmountScenario;
+impl<F: Sep41Fixture> Scenario<F> for BurnNegativeAmountScenario {
+    fn id(&self) -> &'static str { "SEP41-BURN-008" }
+    fn description(&self) -> &'static str { "Negative amount burn" }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let initial_alice = client.balance(alice);
+        let burn_amount = -10_i128;
+
+        env.mock_all_auths();
+        let result = client.try_burn(alice, &burn_amount);
+
+        if result.is_ok() {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Burn fails with negative amount", observed_behavior: "Burn succeeded with negative amount" };
+        }
+
+        let final_alice = client.balance(alice);
+        if final_alice != initial_alice {
+            return TestResult { test_id: self.id(), description: self.description(), status: Status::Fail, expected_behavior: "Balance unchanged", observed_behavior: "Balance mutated on negative burn" };
+        }
+
+        TestResult { test_id: self.id(), description: self.description(), status: Status::Pass, expected_behavior: "Burn fails and state is preserved", observed_behavior: "Burn failed as expected" }
+    }
+}

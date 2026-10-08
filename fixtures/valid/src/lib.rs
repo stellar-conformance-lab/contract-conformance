@@ -90,7 +90,11 @@ mod test {
         AllowanceTransferFromScenario, AllowanceExpirationScenario,
         AllowanceInsufficientScenario, AllowanceUnauthorizedApproveScenario,
         AllowanceUnauthorizedTransferFromScenario, AllowanceEventScenario,
-        AllowanceZeroRevocationScenario, AllowanceOverwriteScenario
+        AllowanceZeroRevocationScenario, AllowanceOverwriteScenario,
+        BurnSuccessScenario, BurnAuthorizationScenario, BurnFromSuccessScenario,
+        BurnFromAuthorizationScenario, BurnInsufficientBalanceScenario,
+        BurnFromInsufficientAllowanceScenario, BurnEventScenario,
+        BurnNegativeAmountScenario
     };
 
     #[test]
@@ -116,6 +120,14 @@ mod test {
             ConformanceEngine::run_isolated_scenario(&AllowanceEventScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&AllowanceZeroRevocationScenario, |env| ValidSep41Fixture::new(env)),
             ConformanceEngine::run_isolated_scenario(&AllowanceOverwriteScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BurnSuccessScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BurnAuthorizationScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BurnFromSuccessScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BurnFromAuthorizationScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BurnInsufficientBalanceScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BurnFromInsufficientAllowanceScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BurnEventScenario, |env| ValidSep41Fixture::new(env)),
+            ConformanceEngine::run_isolated_scenario(&BurnNegativeAmountScenario, |env| ValidSep41Fixture::new(env)),
         ];
 
         for result in results {
