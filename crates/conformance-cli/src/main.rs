@@ -171,7 +171,15 @@ mod tests {
 
     #[test]
     fn test_json_output() {
-        let cli = Cli::try_parse_from(["stellar-conform", "test", "--profile", "sep-41", "--output", "json"]).unwrap();
+        let cli = Cli::try_parse_from([
+            "stellar-conform",
+            "test",
+            "--profile",
+            "sep-41",
+            "--output",
+            "json",
+        ])
+        .unwrap();
         let code = execute_cli(cli).expect("Should succeed");
         assert_eq!(code, 0, "JSON output should succeed");
     }
