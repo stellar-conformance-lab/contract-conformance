@@ -320,10 +320,12 @@ impl<F: Sep41Fixture> Scenario<F> for TransferEventScenario {
                     let t1 = iter.next();
                     let t2 = iter.next();
                     if let (Some(t0), Some(t1), Some(t2)) = (t0, t1, t2) {
-                        if t0 == transfer_symbol.into_val(env)
-                            && t1 == alice.into_val(env)
-                            && t2 == bob.into_val(env)
-                        {
+                        if let (Ok(sym), Ok(from), Ok(to)) = (
+                            soroban_sdk::Symbol::try_from_val(env, &t0),
+                            soroban_sdk::Address::try_from_val(env, &t1),
+                            soroban_sdk::Address::try_from_val(env, &t2),
+                        ) {
+                            if sym == transfer_symbol && &from == alice && &to == bob {
                             if crate::event_helpers::verify_amount_data(env, &data, transfer_amount)
                             {
                                 found = true;
@@ -1029,10 +1031,12 @@ impl<F: Sep41Fixture> Scenario<F> for AllowanceEventScenario {
                     let t1 = iter.next();
                     let t2 = iter.next();
                     if let (Some(t0), Some(t1), Some(t2)) = (t0, t1, t2) {
-                        if t0 == approve_symbol.into_val(env)
-                            && t1 == alice.into_val(env)
-                            && t2 == carol.into_val(env)
-                        {
+                        if let (Ok(sym), Ok(from), Ok(spender)) = (
+                            soroban_sdk::Symbol::try_from_val(env, &t0),
+                            soroban_sdk::Address::try_from_val(env, &t1),
+                            soroban_sdk::Address::try_from_val(env, &t2),
+                        ) {
+                            if sym == approve_symbol && &from == alice && &spender == carol {
                             if crate::event_helpers::verify_approve_data(
                                 env, &data, amount, expiration,
                             ) {
@@ -1613,7 +1617,11 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
                     let t0 = iter.next();
                     let t1 = iter.next();
                     if let (Some(t0), Some(t1)) = (t0, t1) {
-                        if t0 == burn_symbol.into_val(env) && t1 == alice.into_val(env) {
+                        if let (Ok(sym), Ok(from)) = (
+                            soroban_sdk::Symbol::try_from_val(env, &t0),
+                            soroban_sdk::Address::try_from_val(env, &t1),
+                        ) {
+                            if sym == burn_symbol && &from == alice {
                             if crate::event_helpers::verify_amount_data(env, &data, burn_amount) {
                                 found_valid_event = true;
                                 break;
