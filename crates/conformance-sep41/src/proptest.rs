@@ -1,6 +1,7 @@
 use crate::Sep41Fixture;
 use conformance_core::fixture::Fixture;
 use proptest::prelude::*;
+use soroban_sdk::testutils::Ledger;
 use soroban_sdk::{token::Client as TokenClient, Env};
 
 pub fn check_transfer_conservation<F: Sep41Fixture + Fixture>(
@@ -62,7 +63,7 @@ pub fn check_transfer_insufficient_balance<F: Sep41Fixture + Fixture>(
     // We can use `env.try_invoke_contract` directly.
     use soroban_sdk::{vec, IntoVal, Symbol};
 
-    let res = env.try_invoke_contract::<(), _>(
+    let res = env.try_invoke_contract::<(), soroban_sdk::Error>(
         fixture.token_contract_id(),
         &Symbol::new(&env, "transfer"),
         vec![
@@ -174,7 +175,7 @@ pub fn check_allowance_insufficient<F: Sep41Fixture + Fixture>(
     client.approve(from, spender, &approve_amount, &expiration_ledger);
 
     use soroban_sdk::{vec, IntoVal, Symbol};
-    let res = env.try_invoke_contract::<(), _>(
+    let res = env.try_invoke_contract::<(), soroban_sdk::Error>(
         fixture.token_contract_id(),
         &Symbol::new(&env, "transfer_from"),
         vec![
