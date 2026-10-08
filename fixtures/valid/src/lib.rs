@@ -3,7 +3,7 @@
 use conformance_core::fixture::Fixture;
 use conformance_sep41::Sep41Fixture;
 use soroban_sdk::token::StellarAssetClient;
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env, IntoVal};
 
 #[derive(Debug)]
 pub enum ValidFixtureError {
@@ -45,6 +45,16 @@ impl Fixture for ValidSep41Fixture {
 
     fn setup(&self, env: &Env) -> Result<(), Self::Error> {
         let sac_client = StellarAssetClient::new(env, &self.token_id);
+
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: &self.admin,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: &self.token_id,
+                fn_name: "mint",
+                args: (&self.alice, self.expected_initial_balance()).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
 
         // Establish a deterministic initial balance for the test account.
         // This simulates whatever internal mechanism a token uses to distribute balances.
