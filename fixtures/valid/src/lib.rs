@@ -102,7 +102,7 @@ mod test {
         BurnFromSuccessScenario, BurnInsufficientBalanceScenario, BurnSuccessScenario,
         MetaDecimalsScenario, MetaNameScenario, MetaSymbolScenario, TransferAuthorizationScenario,
         TransferEventScenario, TransferInsufficientBalanceScenario, TransferNegativeAmountScenario,
-        TransferSuccessScenario,
+        TransferSuccessScenario, AllowanceTransferFromEventScenario, BurnFromEventScenario,
     };
 
     #[test]
@@ -190,6 +190,12 @@ mod test {
                 ValidSep41Fixture::new,
             ),
             ConformanceEngine::run_isolated_scenario(&BurnEventScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&AllowanceTransferFromEventScenario, |env| {
+                ValidSep41Fixture::new(env)
+            }),
+            ConformanceEngine::run_isolated_scenario(&BurnFromEventScenario, |env| {
                 ValidSep41Fixture::new(env)
             }),
         ];

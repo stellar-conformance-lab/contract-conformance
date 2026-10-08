@@ -1647,3 +1647,194 @@ impl<F: Sep41Fixture> Scenario<F> for BurnEventScenario {
         }
     }
 }
+
+pub struct AllowanceTransferFromEventScenario;
+impl<F: Sep41Fixture> Scenario<F> for AllowanceTransferFromEventScenario {
+    fn id(&self) -> &'static str {
+        "SEP41-ALLOWANCE-011"
+    }
+    fn description(&self) -> &'static str {
+        "transfer_from event emission"
+    }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let bob = fixture.test_account_2();
+        let carol = fixture.test_account_3();
+        let transfer_amount = 10_i128;
+        let expiration = env.ledger().sequence() + 100;
+
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &transfer_amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
+        client.approve(alice, carol, &transfer_amount, &expiration);
+
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: carol,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "transfer_from",
+                args: (carol, alice, bob, &transfer_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
+        client.transfer_from(carol, alice, bob, &transfer_amount);
+
+        let events = env.events().all();
+        let mut found = false;
+        let transfer_symbol = soroban_sdk::Symbol::new(env, "transfer");
+
+        let filtered = events.filter_by_contract(fixture.token_contract_id());
+        for event in filtered.events() {
+            let soroban_sdk::xdr::ContractEventBody::V0(body) = &event.body;
+            let Ok(topics) = soroban_sdk::Vec::<soroban_sdk::Val>::try_from_val(env, &body.topics)
+            else {
+                continue;
+            };
+            let Ok(data) = soroban_sdk::Val::try_from_val(env, &body.data) else {
+                continue;
+            };
+            let contract_id = fixture.token_contract_id().clone();
+            if contract_id == *fixture.token_contract_id() && topics.len() >= 3 {
+                let mut iter = topics.into_iter();
+                let t0 = iter.next();
+                let t1 = iter.next();
+                let t2 = iter.next();
+                if let (Some(t0), Some(t1), Some(t2)) = (t0, t1, t2) {
+                    if let (Ok(sym), Ok(from), Ok(to)) = (
+                        soroban_sdk::Symbol::try_from_val(env, &t0),
+                        soroban_sdk::Address::try_from_val(env, &t1),
+                        soroban_sdk::Address::try_from_val(env, &t2),
+                    ) {
+                        if sym == transfer_symbol
+                            && &from == alice
+                            && &to == bob
+                            && crate::event_helpers::verify_amount_data(env, &data, transfer_amount)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if found {
+            TestResult {
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
+                status: Status::Pass,
+                expected_behavior: "Emits transfer event with correct topics and data",
+                observed_behavior: "transfer_from event found matching specification",
+            }
+        } else {
+            TestResult {
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
+                status: Status::Fail,
+                expected_behavior: "Emits transfer event with correct topics and data",
+                observed_behavior: "Valid transfer_from event was not emitted",
+            }
+        }
+    }
+}
+
+pub struct BurnFromEventScenario;
+impl<F: Sep41Fixture> Scenario<F> for BurnFromEventScenario {
+    fn id(&self) -> &'static str {
+        "SEP41-BURN-008"
+    }
+    fn description(&self) -> &'static str {
+        "burn_from event emission"
+    }
+    fn run(&self, env: &Env, fixture: &F) -> TestResult {
+        let client = TokenClient::new(env, fixture.token_contract_id());
+        let alice = fixture.test_account_1();
+        let carol = fixture.test_account_3();
+        let burn_amount = 5_i128;
+        let expiration = env.ledger().sequence() + 100;
+
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: alice,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "approve",
+                args: (alice, carol, &burn_amount, &expiration).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
+        client.approve(alice, carol, &burn_amount, &expiration);
+
+        env.mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: carol,
+            invoke: &soroban_sdk::testutils::MockAuthInvoke {
+                contract: fixture.token_contract_id(),
+                fn_name: "burn_from",
+                args: (carol, alice, &burn_amount).into_val(env),
+                sub_invokes: &[],
+            },
+        }]);
+        client.burn_from(carol, alice, &burn_amount);
+
+        let events = env.events().all();
+        let mut found_valid_event = false;
+        let burn_symbol = soroban_sdk::Symbol::new(env, "burn");
+
+        let filtered = events.filter_by_contract(fixture.token_contract_id());
+        for event in filtered.events() {
+            let soroban_sdk::xdr::ContractEventBody::V0(body) = &event.body;
+            let Ok(topics) = soroban_sdk::Vec::<soroban_sdk::Val>::try_from_val(env, &body.topics)
+            else {
+                continue;
+            };
+            let Ok(data) = soroban_sdk::Val::try_from_val(env, &body.data) else {
+                continue;
+            };
+            let contract_id = fixture.token_contract_id().clone();
+            if contract_id == *fixture.token_contract_id() && topics.len() >= 2 {
+                let mut iter = topics.into_iter();
+                let t0 = iter.next();
+                let t1 = iter.next();
+                if let (Some(t0), Some(t1)) = (t0, t1) {
+                    if let (Ok(sym), Ok(from)) = (
+                        soroban_sdk::Symbol::try_from_val(env, &t0),
+                        soroban_sdk::Address::try_from_val(env, &t1),
+                    ) {
+                        if sym == burn_symbol
+                            && &from == alice
+                            && crate::event_helpers::verify_amount_data(env, &data, burn_amount)
+                        {
+                            found_valid_event = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if found_valid_event {
+            TestResult {
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
+                status: Status::Pass,
+                expected_behavior: "Emits burn event with exact topics and valid data format",
+                observed_behavior: "burn_from event found matching specification",
+            }
+        } else {
+            TestResult {
+                test_id: <Self as Scenario<F>>::id(self),
+                description: <Self as Scenario<F>>::description(self),
+                status: Status::Fail,
+                expected_behavior: "Emits burn event with exact topics and valid data format",
+                observed_behavior:
+                    "Burn_from event missing or lacked required data matching amount burned",
+            }
+        }
+    }
+}
