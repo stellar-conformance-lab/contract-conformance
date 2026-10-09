@@ -50,30 +50,78 @@ jobs:
           retention-days: 30
 
   deploy-pages:
-    name: Deploy to GitHub Pages
+    name: Publish Reports and Deploy to GitHub Pages
     needs: quality
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
+      contents: write
       pages: write
       id-token: write
+    concurrency:
+      group: conformance-report-publishing
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+
       - name: Download Report Artifact
         uses: actions/download-artifact@v4
         with:
           name: conformance-report
           path: public
-      - name: Rename file for static serving
-        run: mv public/conformance-report.json public/report.json
+
+      - name: Checkout historical reports branch
+        uses: actions/checkout@v4
+        with:
+          ref: reports-history
+          path: history-branch
+
+      - name: Update historical reports
+        env:
+          RUN_ID: ${{ github.run_id }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          bash scripts/update-history.sh \
+            public/conformance-report.json \
+            history-branch \
+            "$RUN_ID" \
+            "$COMMIT_SHA" \
+            "$TIMESTAMP"
+
+      - name: Commit and push history
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          git -C history-branch config user.name "github-actions[bot]"
+          git -C history-branch config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git -C history-branch add history/
+
+          if ! git -C history-branch diff --cached --quiet; then
+            git -C history-branch commit -m "ci: update conformance history for run ${RUN_ID}"
+            git -C history-branch push origin HEAD:reports-history
+          fi
+
+      - name: Prepare Pages files
+        run: |
+          mv public/conformance-report.json public/report.json
+          cp -R history-branch/history public/history
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      - name: Upload pages artifact
+
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: public
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
