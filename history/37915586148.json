@@ -1,0 +1,217 @@
+{
+  "profile": "SEP-41",
+  "fixture": "valid",
+  "status": "PASS",
+  "summary": {
+    "total": 29,
+    "passed": 29,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "results": [
+    {
+      "test_id": "SEP41-META-001",
+      "description": "Token name",
+      "status": "PASS",
+      "expected_behavior": "Token name function executes successfully",
+      "observed_behavior": "Token name returned without error"
+    },
+    {
+      "test_id": "SEP41-META-002",
+      "description": "Token symbol",
+      "status": "PASS",
+      "expected_behavior": "Token symbol function executes successfully",
+      "observed_behavior": "Token symbol returned without error"
+    },
+    {
+      "test_id": "SEP41-META-003",
+      "description": "Token decimals",
+      "status": "PASS",
+      "expected_behavior": "Token decimals function executes successfully",
+      "observed_behavior": "Token decimals returned without error"
+    },
+    {
+      "test_id": "SEP41-BAL-001",
+      "description": "Initial balance",
+      "status": "PASS",
+      "expected_behavior": "Account has expected initial balance",
+      "observed_behavior": "Balance matched expected value"
+    },
+    {
+      "test_id": "SEP41-BAL-002",
+      "description": "Zero balance",
+      "status": "PASS",
+      "expected_behavior": "New account balance is zero",
+      "observed_behavior": "Balance is exactly zero"
+    },
+    {
+      "test_id": "SEP41-TRANSFER-001",
+      "description": "Successful transfer",
+      "status": "PASS",
+      "expected_behavior": "Balances update correctly based on transfer",
+      "observed_behavior": "Balances updated correctly"
+    },
+    {
+      "test_id": "SEP41-TRANSFER-002",
+      "description": "Transfer event emission",
+      "status": "PASS",
+      "expected_behavior": "Emits transfer event with correct topics and data",
+      "observed_behavior": "Transfer event found matching specification"
+    },
+    {
+      "test_id": "SEP41-TRANSFER-004",
+      "description": "Insufficient balance",
+      "status": "PASS",
+      "expected_behavior": "Transfer fails and balances are preserved",
+      "observed_behavior": "Transfer failed as expected without mutating state"
+    },
+    {
+      "test_id": "SEP41-TRANSFER-005",
+      "description": "Transfer authorization",
+      "status": "PASS",
+      "expected_behavior": "Transfer requires authorization",
+      "observed_behavior": "Transfer failed when unauthorized"
+    },
+    {
+      "test_id": "SEP41-TRANSFER-007",
+      "description": "Negative amount transfer",
+      "status": "PASS",
+      "expected_behavior": "Transfer fails and state is preserved",
+      "observed_behavior": "Transfer failed as expected"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-001",
+      "description": "Allowance query",
+      "status": "PASS",
+      "expected_behavior": "Allowance reflects approved amount",
+      "observed_behavior": "Allowance matched approved amount"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-002",
+      "description": "Approve behavior",
+      "status": "PASS",
+      "expected_behavior": "Approve successfully commits exact allowance to state",
+      "observed_behavior": "Approve verified successfully"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-003",
+      "description": "transfer_from behavior and reduction",
+      "status": "PASS",
+      "expected_behavior": "transfer_from moves tokens exactly, reduces allowance, and preserves expiration",
+      "observed_behavior": "State transitions correctly processed"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-004",
+      "description": "Expiration bounds",
+      "status": "PASS",
+      "expected_behavior": "Allowance is zero when current > live_until_ledger",
+      "observed_behavior": "Expiration semantics correctly adhered to"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-005",
+      "description": "Insufficient allowance",
+      "status": "PASS",
+      "expected_behavior": "Transfer fails cleanly without mutating state",
+      "observed_behavior": "Transfer rejected correctly"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-006",
+      "description": "Unauthorized approve",
+      "status": "PASS",
+      "expected_behavior": "Unauthorized approve fails cleanly",
+      "observed_behavior": "Failed cleanly without state mutation"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-007",
+      "description": "Unauthorized transfer_from",
+      "status": "PASS",
+      "expected_behavior": "Unauthorized transfer_from fails cleanly",
+      "observed_behavior": "Failed cleanly without authorization"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-008",
+      "description": "Approve event emission",
+      "status": "PASS",
+      "expected_behavior": "Emits approve event with required topics and data",
+      "observed_behavior": "Approve event found with required semantic topics and exact data"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-009",
+      "description": "Zero-amount revocation",
+      "status": "PASS",
+      "expected_behavior": "approve with amount=0 revokes allowance completely",
+      "observed_behavior": "Allowance successfully revoked to 0"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-010",
+      "description": "Approve overwrite behavior",
+      "status": "PASS",
+      "expected_behavior": "Subsequent approve fully overwrites amount and expiration",
+      "observed_behavior": "Allowance successfully overwritten"
+    },
+    {
+      "test_id": "SEP41-BURN-001",
+      "description": "Direct burn",
+      "status": "PASS",
+      "expected_behavior": "Balance decreases by burn amount",
+      "observed_behavior": "Balance decreased correctly"
+    },
+    {
+      "test_id": "SEP41-BURN-002",
+      "description": "Burn authorization",
+      "status": "PASS",
+      "expected_behavior": "Burn fails cleanly without authorization",
+      "observed_behavior": "Failed cleanly"
+    },
+    {
+      "test_id": "SEP41-BURN-003",
+      "description": "burn_from behavior",
+      "status": "PASS",
+      "expected_behavior": "burn_from decreases balance and allowance, preserves expiration",
+      "observed_behavior": "Delegated burn executed accurately"
+    },
+    {
+      "test_id": "SEP41-BURN-004",
+      "description": "burn_from authorization",
+      "status": "PASS",
+      "expected_behavior": "Unauthorized burn_from fails cleanly",
+      "observed_behavior": "Failed cleanly"
+    },
+    {
+      "test_id": "SEP41-BURN-005",
+      "description": "Insufficient balance",
+      "status": "PASS",
+      "expected_behavior": "Burn fails cleanly on insufficient balance",
+      "observed_behavior": "Burn rejected correctly"
+    },
+    {
+      "test_id": "SEP41-BURN-006",
+      "description": "Insufficient allowance",
+      "status": "PASS",
+      "expected_behavior": "burn_from fails cleanly without mutating state",
+      "observed_behavior": "Delegated burn rejected correctly"
+    },
+    {
+      "test_id": "SEP41-BURN-007",
+      "description": "Burn event verification",
+      "status": "PASS",
+      "expected_behavior": "Emits burn event with exact topics and valid data format",
+      "observed_behavior": "Burn event found matching exact SEP-41 semantic requirements"
+    },
+    {
+      "test_id": "SEP41-ALLOWANCE-011",
+      "description": "transfer_from event emission",
+      "status": "PASS",
+      "expected_behavior": "Emits transfer event with correct topics and data",
+      "observed_behavior": "transfer_from event found matching specification"
+    },
+    {
+      "test_id": "SEP41-BURN-008",
+      "description": "burn_from event emission",
+      "status": "PASS",
+      "expected_behavior": "Emits burn event with exact topics and valid data format",
+      "observed_behavior": "burn_from event found matching specification"
+    }
+  ]
+}
