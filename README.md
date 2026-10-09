@@ -23,6 +23,13 @@ Understanding the framework relies on clearly distinguishing the following layer
 
 The core conformance engine is stable and in active maintenance. **SEP-41 (Token Standard) v0.5.2** is the project's stable, flagship behavioral conformance profile. It evaluates metadata, balance, transfers, allowances, burns, events, and authorizations.
 
+### MVP Milestone (Complete)
+* **MVP status:** Complete against the documented MVP acceptance criteria.
+* **Delivered functionality:** SEP-41 conformance execution, structured JSON report generation, historical report publishing, and dashboard visualization of current and historical results.
+* **Architecture boundary:** The engine is authoritative for conformance execution; the dashboard visualizes published reports and does not execute arbitrary contracts.
+* **Deferred improvements:** End-to-end dashboard tests, further accessibility work, historical-run comparison, and support for additional profiles.
+* **Verification caveat:** Failed-report publishing has been reviewed logically, but the failure path has not yet been demonstrated end-to-end.
+
 Development of additional behavioral profiles is currently paused. Future profile expansion is strictly contingent upon the Stellar ecosystem maturing additional smart-contract standards into "Active" or "Final" status to guarantee stable normative requirements.
 
 ### Limitations / Non-goals
